@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lavique 転写紙管理</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+<style>
+:root{
+  --pink:#c9768a;--pink-l:#ffc0cb;--pink-bg:#fff0f3;
+  --ink:#1a1625;--ink-mid:#3d3650;--ink-light:#7c7490;
+  --border:#e8e3f5;--bg:#f7f5ff;
+  --red:#dc2626;--green:#059669;--gold:#d97706;--blue:#3b82f6;
+  --shadow:0 2px 16px rgba(50,40,90,0.10);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;}
+.hidden{display:none!important;}
+
+/* ── LOGIN ── */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(145deg,#1a1625,#c9768a);padding:24px;}
+.login-box{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);backdrop-filter:blur(20px);border-radius:24px;padding:36px 28px;width:100%;max-width:380px;}
+.login-title{font-family:'DM Serif Display',serif;font-size:28px;color:#fff;text-align:center;margin-bottom:4px;}
+.login-sub{font-size:11px;color:#a5b4fc;letter-spacing:.15em;text-align:center;margin-bottom:28px;}
+.role-btn{width:100%;padding:13px 16px;border-radius:12px;border:1.5px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.08);color:#fff;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px;display:flex;align-items:center;gap:12px;transition:all .2s;}
+.role-btn:hover{background:rgba(255,255,255,0.16);}
+.role-icon{font-size:20px;}
+.role-desc{font-size:11px;opacity:.6;font-weight:400;margin-top:1px;}
+
+/* ── OVERLAY / MODAL ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;z-index:300;padding:20px;}
+.modal{background:#fff;border-radius:16px;padding:24px;width:100%;max-width:340px;}
+.mbot{background:#fff;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;position:fixed;bottom:0;left:50%;transform:translateX(-50%);}
+
+/* ── COMMON ── */
+.inp{width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;margin-bottom:10px;outline:none;transition:border-color .15s;}
+.inp:focus{border-color:var(--pink);}
+.btn{width:100%;padding:11px;border:none;border-radius:10px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;margin-bottom:8px;}
+.btn-p{background:var(--pink);color:#fff;}
+.btn-g{background:#f3f4f6;color:var(--ink-mid);border:1.5px solid var(--border);}
+.err{color:var(--red);font-size:12px;margin-bottom:8px;text-align:center;}
+.flabel{font-size:12px;font-weight:700;color:var(--ink-mid);margin-bottom:4px;display:block;}
+
+/* ── APP ── */
+.app{display:none;min-height:100vh;flex-direction:column;}
+.app.active{display:flex;}
+.hdr{padding:14px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.ha{background:linear-gradient(135deg,#c9768a,#e8a0ad);}
+.hf{background:linear-gradient(135deg,#7c2d12,#c2410c);}
+.hs{background:linear-gradient(135deg,#0f172a,#334155);}
+.hl-{display:flex;align-items:center;gap:10px;}
+.hr-{display:flex;gap:8px;align-items:center;}
+.logo{font-family:'DM Serif Display',serif;font-size:20px;color:#fff;}
+.rtag{background:rgba(255,255,255,0.2);color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;}
+.lbtn{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;}
+.fab{background:linear-gradient(135deg,#e8a0ad,#c9768a);border:none;color:#fff;width:48px;height:48px;border-radius:50%;font-size:24px;cursor:pointer;box-shadow:0 4px 16px rgba(201,118,138,.4);display:flex;align-items:center;justify-content:center;position:fixed;bottom:20px;right:20px;z-index:50;}
+
+/* ── LIST ── */
+.list-body{flex:1;overflow-y:auto;padding:16px;}
+.stats-row{display:flex;gap:8px;overflow-x:auto;margin-bottom:12px;}
+.stat{background:#fff;border-radius:12px;padding:12px 16px;min-width:72px;text-align:center;box-shadow:var(--shadow);}
+.stat-n{font-size:22px;font-weight:900;}
+.stat-l{font-size:10px;color:var(--ink-light);margin-top:2px;}
+.pay-bar{background:#fef3c7;border:1.5px solid #fcd34d;border-radius:14px;padding:12px 16px;margin-bottom:12px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;}
+.pay-det{background:#fff;border:1px solid var(--border);border-radius:12px;margin-bottom:12px;overflow:hidden;}
+.prow{display:flex;justify-content:space-between;padding:9px 16px;border-bottom:1px solid var(--border);font-size:13px;}
+.ptot{background:#fef3c7;padding:12px 16px;display:flex;justify-content:space-between;}
+.filters{display:flex;gap:6px;overflow-x:auto;margin-bottom:12px;padding-bottom:4px;}
+.fil{background:#fff;border:1.5px solid var(--border);border-radius:99px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit;}
+.fil.on{background:var(--pink);color:#fff;border-color:var(--pink);}
+.ccard{background:#fff;border-radius:14px;padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow);cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.ccard:hover{box-shadow:0 4px 20px rgba(201,118,138,.2);}
+.ctitle{font-size:14px;font-weight:800;}
+.csub{font-size:12px;color:var(--ink-light);margin-top:2px;}
+.cright{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.cfct{font-size:11px;color:var(--ink-light);}
+.cbadge{padding:4px 10px;border-radius:99px;font-size:11px;font-weight:700;border:1.5px solid;}
+.cdot{width:8px;height:8px;border-radius:50%;background:#e2e8f0;flex-shrink:0;}
+.cdot.unread{background:var(--pink);}
+
+/* ── DETAIL ── */
+.det-body{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.back-bar{padding:12px 16px;background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
+.back-btn{background:none;border:none;font-size:14px;font-weight:700;color:var(--pink);cursor:pointer;font-family:inherit;padding:0;}
+.det-info{padding:14px 16px;background:#fff;border-bottom:1px solid var(--border);}
+.igrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+.ibox{background:#f9f8ff;border-radius:10px;padding:10px 12px;}
+.ilbl{font-size:10px;color:var(--ink-light);margin-bottom:3px;}
+.ival{font-size:14px;font-weight:700;}
+.agrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px;}
+.abox{background:#f9f8ff;border-radius:10px;padding:10px 12px;}
+
+/* ── FLOW ── */
+.sflow{display:flex;gap:4px;overflow-x:auto;padding:10px 16px;background:#fff;border-bottom:1px solid var(--border);}
+.step{padding:5px 10px;border-radius:99px;font-size:11px;font-weight:700;border:1.5px solid;white-space:nowrap;cursor:pointer;}
+
+/* ── MESSAGES ── */
+.msgs{flex:1;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:10px;}
+
+/* pending message card (admin only) */
+.pending-card{background:#fffbeb;border:2px solid #fcd34d;border-radius:14px;padding:12px 14px;margin-bottom:4px;}
+.pending-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.pending-tag{background:#f59e0b;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;}
+.pending-from{font-size:12px;color:var(--ink-light);}
+.pending-body{font-size:13px;line-height:1.5;margin-bottom:10px;}
+.pending-img{max-width:180px;border-radius:8px;margin-bottom:10px;display:block;}
+.pending-edit{width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;margin-bottom:8px;outline:none;resize:none;}
+.pending-edit:focus{border-color:var(--pink);}
+.fwd-row{display:flex;gap:8px;}
+.fwd-btn{flex:1;padding:8px;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;}
+.fwd-to-stu{background:#dbeafe;color:#1d4ed8;}
+.fwd-to-fct{background:#dcfce7;color:#166534;}
+.del-msg-btn{padding:8px 12px;border:1.5px solid #fca5a5;background:#fff0f0;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;color:var(--red);font-family:inherit;}
+
+/* forwarded / normal message bubble */
+.mwrap{display:flex;flex-direction:column;max-width:82%;}
+.mwrap.me{align-self:flex-end;align-items:flex-end;}
+.mwrap.them{align-self:flex-start;}
+.mlbl{font-size:10px;color:var(--ink-light);margin-bottom:3px;}
+.mbubble{padding:10px 13px;border-radius:14px;font-size:13px;line-height:1.5;}
+.mbubble.me{background:var(--pink);color:#fff;border-radius:14px 14px 4px 14px;}
+.mbubble.them{background:#fff;border-radius:14px 14px 14px 4px;box-shadow:var(--shadow);}
+.mtime{font-size:10px;color:var(--ink-light);margin-top:3px;}
+.mimg{max-width:200px;border-radius:10px;cursor:pointer;}
+
+/* ── INPUT AREA ── */
+.adva{padding:10px 16px;background:#fff;border-top:1px solid var(--border);}
+.est-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.est-inp{width:120px;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;outline:none;}
+.est-inp:focus{border-color:var(--pink);}
+.est-btn{padding:8px 16px;background:var(--pink);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;}
+.mia{padding:12px 16px;background:#fff;border-top:1px solid var(--border);}
+.mrow{display:flex;gap:8px;align-items:flex-end;margin-bottom:8px;}
+.mta{flex:1;padding:10px 12px;border:1.5px solid var(--border);border-radius:12px;font-size:13px;font-family:inherit;resize:none;outline:none;}
+.mta:focus{border-color:var(--pink);}
+.sbtn{padding:10px 16px;background:var(--pink);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;}
+.file-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.file-lbl{font-size:12px;color:var(--ink-light);}
+.notice{padding:10px 14px;border-radius:10px;font-size:12px;margin:8px 0;}
+.no{background:#fef2f2;color:#991b1b;}
+.del-btn{width:100%;padding:9px;background:#fff0f0;border:1.5px solid #fca5a5;border-radius:10px;color:var(--red);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:4px;}
+.url-area{background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:12px;margin-bottom:10px;}
+.url-text{font-size:12px;word-break:break-all;color:#065f46;margin-bottom:8px;}
+.cpbtn{width:100%;padding:10px;background:var(--green);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;margin-bottom:8px;}
+#registerScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(145deg,#1a1625,#c9768a);padding:24px;}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen" class="login-wrap">
+  <div class="login-box">
+    <div class="login-title">Lavique</div>
+    <div class="login-sub">転写紙 制作管理システム</div>
+    <button class="role-btn" onclick="showPW('admin')"><span class="role-icon">👑</span><div><div>管理者</div><div class="role-desc">全案件・承認・転送</div></div></button>
+    <button class="role-btn" onclick="showPW('goto')"><span class="role-icon">🎨</span><div><div>後藤愛</div><div class="role-desc">全案件・メッセージ確認</div></div></button>
+    <button class="role-btn" onclick="showPW('factory_ena')"><span class="role-icon">🏭</span><div><div>工場：恵那シルク</div><div class="role-desc">担当案件の確認・連絡</div></div></button>
+    <button class="role-btn" onclick="showPW('factory_shouwa')"><span class="role-icon">🏭</span><div><div>工場：昭和転写</div><div class="role-desc">担当案件の確認・連絡</div></div></button>
+  </div>
+</div>
+
+<!-- PW MODAL -->
+<div id="pwModal" class="overlay hidden">
+  <div class="modal">
+    <div style="font-size:15px;font-weight:800;margin-bottom:14px" id="pwTitle">パスワード</div>
+    <input id="pwInput" class="inp" type="password" placeholder="パスワードを入力" onkeydown="if(event.key==='Enter')checkPW()">
+    <div id="pwErr" class="err hidden">パスワードが違います</div>
+    <button class="btn btn-p" onclick="checkPW()" style="margin-top:4px">ログイン</button>
+    <button class="btn btn-g" onclick="closePW()">キャンセル</button>
+  </div>
+</div>
+
+<!-- MANAGER APP -->
+<div id="managerApp" class="app" style="display:none">
+  <div class="hdr ha">
+    <div class="hl-"><span class="logo">Lavique</span><span id="mgrTag" class="rtag">管理者</span></div>
+    <div class="hr-"><button class="lbtn" onclick="goHome()">🏠 ホーム</button><button class="lbtn" onclick="logout()">ログアウト</button></div>
+  </div>
+  <div id="mgrList" class="list-body">
+    <div class="stats-row" id="mgrStats"></div>
+    <div class="pay-bar" onclick="togglePay()">
+      <div><div style="font-size:13px;font-weight:700;color:#92400e">💰 月末工場支払い</div><div style="font-size:10px;color:#a16207">タップで詳細</div></div>
+      <div style="font-size:18px;font-weight:900;color:#92400e" id="payTotal">¥0</div>
+    </div>
+    <div id="payDet" class="pay-det hidden"></div>
+    <div class="filters" id="mgrFilters"></div>
+    <div id="mgrCases"></div>
+  </div>
+  <div id="mgrDet" class="det-body hidden">
+    <div class="back-bar">
+      <button class="back-btn" onclick="backToList('mgr')">← 案件一覧</button>
+    </div>
+    <div class="det-info" id="mgrInfo"></div>
+    <div class="sflow" id="mgrFlow"></div>
+    <div class="msgs" id="mgrMsgs"></div>
+    <div class="adva" id="mgrAdv"></div>
+    <div class="mia" id="mgrIn"></div>
+  </div>
+  <button class="fab hidden" id="fabBtn" onclick="openAdd()">＋</button>
+</div>
+
+<!-- FACTORY APP -->
+<div id="factoryApp" class="app" style="display:none">
+  <div class="hdr hf">
+    <div class="hl-"><span class="logo">Lavique</span><span id="fctTag" class="rtag">工場</span></div>
+    <div class="hr-"><button class="lbtn" onclick="goHome()">🏠 ホーム</button><button class="lbtn" onclick="logout()">ログアウト</button></div>
+  </div>
+  <div id="fctList" class="list-body">
+    <div class="filters" id="fctFilters"></div>
+    <div id="fctCases"></div>
+  </div>
+  <div id="fctDet" class="det-body hidden">
+    <div class="back-bar">
+      <button class="back-btn" onclick="backToList('fct')">← 案件一覧</button>
+    </div>
+    <div class="det-info" id="fctInfo"></div>
+    <div class="sflow" id="fctFlow"></div>
+    <div class="msgs" id="fctMsgs"></div>
+    <div class="mia" id="fctIn"></div>
+  </div>
+</div>
+
+<!-- REGISTRATION FORM -->
+<div id="registerScreen" class="login-wrap hidden">
+  <div style="background:#fff;border-radius:24px;padding:32px 24px;width:100%;max-width:440px;max-height:90vh;overflow-y:auto">
+    <div style="font-family:'DM Serif Display',serif;font-size:22px;color:var(--pink);text-align:center;margin-bottom:4px">Lavique</div>
+    <div style="font-size:12px;color:var(--ink-light);text-align:center;margin-bottom:24px">転写紙 制作お申込みフォーム</div>
+    <div id="regForm">
+      <label class="flabel">お名前 *</label>
+      <input id="rf_name" class="inp" placeholder="例：山田 花子">
+      <label class="flabel">メールアドレス *</label>
+      <input id="rf_email" class="inp" type="email" placeholder="例：hanako@gmail.com">
+      <label class="flabel">電話番号</label>
+      <input id="rf_tel" class="inp" type="tel" placeholder="例：090-1234-5678">
+      <label class="flabel">ご住所</label>
+      <input id="rf_addr" class="inp" placeholder="例：大阪府大阪市...">
+      <label class="flabel">転写紙デザイン名 *</label>
+      <input id="rf_design" class="inp" placeholder="例：花のワルツ">
+      <label class="flabel">ご希望仕様</label>
+      <select id="rf_spec" class="inp">
+        <option>A4を2面付け</option>
+        <option>A3</option>
+        <option>その他</option>
+      </select>
+      <label class="flabel">備考・ご要望</label>
+      <textarea id="rf_note" class="inp" rows="3" placeholder="ご質問やご要望があればご記入ください"></textarea>
+      <div id="regErr" class="err hidden">お名前・メールアドレス・デザイン名は必須です</div>
+      <button class="btn btn-p" onclick="submitRegister()" style="margin-top:8px">送信する</button>
+    </div>
+    <div id="regDone" class="hidden" style="text-align:center;padding:20px 0">
+      <div style="font-size:40px;margin-bottom:12px">✅</div>
+      <div style="font-size:16px;font-weight:800;margin-bottom:8px">お申込みありがとうございます</div>
+      <div style="font-size:13px;color:var(--ink-mid);margin-bottom:20px">以下のURLがあなた専用のページです。<br>ブックマークしてご利用ください。</div>
+      <div style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:12px;padding:16px;margin-bottom:16px">
+        <div id="regUrl" style="font-size:12px;color:#065f46;word-break:break-all;margin-bottom:10px"></div>
+        <button class="btn btn-p" onclick="copyRegUrl()" style="margin:0">📋 URLをコピー</button>
+      </div>
+      <div style="font-size:11px;color:var(--ink-light)">このURLはあなただけのものです。大切に保管してください。</div>
+    </div>
+  </div>
+</div>
+
+<!-- STUDENT APP -->
+<div id="studentApp" class="app" style="display:none">
+  <div class="hdr hs">
+    <div class="hl-"><span class="logo">Lavique</span><span class="rtag" id="stuName">生徒</span></div>
+    <div class="hr-"><button class="lbtn" onclick="window.scrollTo(0,0)">🏠 ホーム</button></div>
+  </div>
+  <div id="stuBody" class="det-body">
+    <div class="det-info" id="stuInfo"></div>
+    <div class="sflow" id="stuFlow"></div>
+    <div class="msgs" id="stuMsgs"></div>
+    <div class="mia" id="stuIn"></div>
+  </div>
+  <div id="stuNF" class="list-body hidden">
+    <div class="notice no" style="margin-top:40px">案件が見つかりません。URLをご確認ください。</div>
+  </div>
+</div>
+
+<!-- ADD MODAL -->
+<div id="addModal" class="overlay hidden">
+  <div class="mbot" onclick="event.stopPropagation()">
+    <div style="font-size:17px;font-weight:800;margin-bottom:18px">📋 新規案件登録</div>
+    <label class="flabel">生徒名 *</label>
+    <input id="fs" class="inp" placeholder="例：山田 花子">
+    <label class="flabel">生徒のメールアドレス</label>
+    <input id="fem" class="inp" type="email" placeholder="例：hanako@gmail.com">
+    <label class="flabel">転写紙名 *</label>
+    <input id="fn" class="inp" placeholder="例：花のワルツ">
+    <label class="flabel">仕様</label>
+    <select id="fsp" class="inp"><option>A4を2面付け</option><option>A3</option><option>その他</option></select>
+    <label class="flabel">担当工場</label>
+    <select id="ff" class="inp"><option value="">未定</option><option>恵那シルク</option><option>昭和転写</option></select>
+    <label class="flabel">備考</label>
+    <textarea id="fno" class="inp" rows="2" placeholder="メモがあれば"></textarea>
+    <div id="addErr" class="err hidden">生徒名と転写紙名は必須です</div>
+    <div id="urlArea" class="hidden">
+      <div class="url-area">
+        <div style="font-size:12px;color:#065f46;margin-bottom:6px">✅ 案件を作成しました！このURLを生徒に送ってください。</div>
+        <div id="urlBox" class="url-text"></div>
+        <button class="cpbtn" onclick="copyUrl()">📋 URLをコピー</button>
+      </div>
+    </div>
+    <button id="saveBtn" class="btn btn-p" onclick="saveCase()">案件を作成 → URLを発行</button>
+    <button class="btn btn-g" onclick="closeAdd()">閉じる</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// FIREBASE
+// ═══════════════════════════════════════════
+firebase.initializeApp({
+  apiKey:"AIzaSyDFL81Y_4EpqRSoJUvIg--lyQ0lC2rQAVc",
+  authDomain:"lavique-beb14.firebaseapp.com",
+  databaseURL:"https://lavique-beb14-default-rtdb.firebaseio.com",
+  projectId:"lavique-beb14",
+  storageBucket:"lavique-beb14.firebasestorage.app",
+  messagingSenderId:"481599803126",
+  appId:"1:481599803126:web:5908512bb54f1dbf5aa6d7"
+});
+const db = firebase.database();
+
+// ═══════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════
+const PW = {admin:'rierier0922', goto:'lavique.ai', factory_ena:'ena.lavique', factory_shouwa:'shouwa.lavique'};
+const RIE_EMAIL     = 'homesalonstyle@gmail.com';
+const GOTO_EMAIL    = 'ito.goto.1126@gmail.com';
+const FACTORY_EMAILS = {'恵那シルク':'rierier0922@gmail.com', '昭和転写':'sales@showadc.jp'};
+const CLOUD_NAME    = 'db5fgbtnn';
+const UPLOAD_PRESET = 'nsegom3j';
+const EJS_SERVICE   = 'service_vsfcefg';
+const EJS_TEMPLATE  = 'template_bmbb5pt';
+const APP_URL       = location.origin + location.pathname;
+
+emailjs.init('qynFxNvxQ0QvI8ih0');
+
+// ═══════════════════════════════════════════
+// STATUS STEPS
+// ═══════════════════════════════════════════
+const ST = [
+  {key:'入稿受付',    color:'#94a3b8', next:'データ調整中'},
+  {key:'データ調整中', color:'#f59e0b', next:'見積待ち'},
+  {key:'見積待ち',    color:'#3b82f6', next:'見積提示済み'},
+  {key:'見積提示済み', color:'#8b5cf6', next:'サンプル発注'},
+  {key:'サンプル発注', color:'#ec4899', next:'サンプル確認中'},
+  {key:'サンプル確認中',color:'#f97316', next:'本刷り見積待ち'},
+  {key:'本刷り見積待ち',color:'#14b8a6', next:'本刷り発注'},
+  {key:'本刷り発注',  color:'#ea580c', next:'納品完了'},
+  {key:'納品完了',    color:'#10b981', next:'入金済'},
+  {key:'入金済',      color:'#c9768a', next:null},
+];
+
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+let role = '', pendingRole = '';
+let casesData = {}, currentId = null;
+let msgOff = null, genUrl = '';
+let filterSt = 'all', payOpen = false;
+
+// ═══════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════
+const ts     = () => Date.now();
+const today  = () => new Date().toLocaleDateString('ja-JP');
+const genKey = () => Math.random().toString(36).slice(2,10) + Math.random().toString(36).slice(2,10);
+const fmtTime = (t) => new Date(t).toLocaleString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+const isAdmin = () => role === 'admin' || role === 'goto';
+const isFactory = () => role === 'factory_ena' || role === 'factory_shouwa';
+
+// ═══════════════════════════════════════════
+// EMAIL NOTIFICATIONS
+// ═══════════════════════════════════════════
+function sendNotification(toEmail, senderName, caseName, studentName, messageText) {
+  if (!toEmail) return;
+  emailjs.send(EJS_SERVICE, EJS_TEMPLATE, {
+    to_email: toEmail, name: senderName, sender_name: senderName,
+    case_name: caseName, student_name: studentName,
+    message: messageText || '（画像が送信されました）',
+    app_url: APP_URL, email: toEmail,
+  }).catch(e => console.log('EmailJS error:', e));
+}
+
+// Admin notified when factory/student sends (pending)
+// Factory/student notified when admin forwards to them
+function notifyPending(msg, c) {
+  // Notify admin that a new pending message arrived
+  const text = msg.text || '（画像）';
+  sendNotification(RIE_EMAIL,  msg.senderLabel, c.designName, c.studentName, text);
+  sendNotification(GOTO_EMAIL, msg.senderLabel, c.designName, c.studentName, text);
+}
+
+function notifyForwarded(msg, c) {
+  const text = msg.forwardedText || msg.text || '（画像）';
+  if (msg.forwardTo === 'student' && c.studentEmail) {
+    sendNotification(c.studentEmail, msg.senderLabel, c.designName, c.studentName, text);
+  } else if (msg.forwardTo === 'factory') {
+    const fe = FACTORY_EMAILS[c.factory] || '';
+    if (fe) sendNotification(fe, msg.senderLabel, c.designName, c.studentName, text);
+  }
+}
+
+// ═══════════════════════════════════════════
+// IMAGE UPLOAD
+// ═══════════════════════════════════════════
+async function uploadImage(file) {
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('upload_preset', UPLOAD_PRESET);
+  fd.append('folder', 'lavique');
+  const res  = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {method:'POST', body:fd});
+  const data = await res.json();
+  return data.secure_url;
+}
+
+async function sendImage(inputId) {
+  const fileInput = document.getElementById(inputId + 'file');
+  if (!fileInput || !fileInput.files[0] || !currentId) return;
+  const file = fileInput.files[0];
+  const c    = casesData[currentId] || {};
+  const btn  = document.getElementById(inputId + 'imgbtn');
+  if (btn) { btn.textContent = '送信中...'; btn.disabled = true; }
+  try {
+    const url = await uploadImage(file);
+    submitMsg(inputId, '', url);
+    fileInput.value = '';
+    if (btn) { btn.textContent = '送信'; btn.disabled = false; }
+  } catch(e) {
+    alert('画像のアップロードに失敗しました。');
+    if (btn) { btn.textContent = '送信'; btn.disabled = false; }
+  }
+}
+
+// ═══════════════════════════════════════════
+// LOGIN
+// ═══════════════════════════════════════════
+function showPW(r) {
+  pendingRole = r;
+  const labels = {admin:'管理者', goto:'後藤愛', factory_ena:'工場：恵那シルク', factory_shouwa:'工場：昭和転写'};
+  document.getElementById('pwTitle').textContent = labels[r] + ' — パスワード';
+  document.getElementById('pwInput').value = '';
+  document.getElementById('pwErr').classList.add('hidden');
+  document.getElementById('pwModal').classList.remove('hidden');
+  setTimeout(() => document.getElementById('pwInput').focus(), 100);
+}
+function closePW() { document.getElementById('pwModal').classList.add('hidden'); }
+function checkPW() {
+  if (document.getElementById('pwInput').value === PW[pendingRole]) {
+    closePW(); doLogin(pendingRole);
+  } else {
+    document.getElementById('pwErr').classList.remove('hidden');
+  }
+}
+
+function showApp(appId) {
+  ['managerApp','factoryApp','studentApp'].forEach(id => {
+    const el = document.getElementById(id);
+    el.style.display = 'none';
+    el.classList.remove('active');
+  });
+  document.getElementById('loginScreen').style.display = 'none';
+  const app = document.getElementById(appId);
+  app.style.display = 'flex';
+  app.classList.add('active');
+}
+
+function doLogin(r) {
+  role = r;
+  if (isAdmin()) {
+    document.getElementById('mgrTag').textContent = r === 'admin' ? '管理者' : '後藤愛';
+    if (r === 'admin') document.getElementById('fabBtn').classList.remove('hidden');
+    else document.getElementById('fabBtn').classList.add('hidden');
+    showApp('managerApp');
+    casesData = {};
+    db.ref('cases').on('value', s => { casesData = s.val() || {}; renderMgrList(); });
+  } else {
+    const fName = r === 'factory_ena' ? '恵那シルク' : '昭和転写';
+    document.getElementById('fctTag').textContent = '工場：' + fName;
+    showApp('factoryApp');
+    casesData = {};
+    db.ref('cases').on('value', s => { casesData = s.val() || {}; renderFctList(); });
+  }
+}
+
+function logout() {
+  role = ''; casesData = {}; currentId = null;
+  if (msgOff) { msgOff(); msgOff = null; }
+  ['managerApp','factoryApp','studentApp'].forEach(id => {
+    const el = document.getElementById(id);
+    el.style.display = 'none';
+    el.classList.remove('active');
+  });
+  document.getElementById('loginScreen').style.display = 'flex';
+}
+
+// ═══════════════════════════════════════════
+// MANAGER LIST
+// ═══════════════════════════════════════════
+function renderMgrList() {
+  const cases = Object.entries(casesData);
+  const prog = cases.filter(([,c]) => !['納品完了','入金済'].includes(c.status)).length;
+  const hon  = cases.filter(([,c]) => ['本刷り発注','納品完了'].includes(c.status)).length;
+  const done = cases.filter(([,c]) => c.status === '入金済').length;
+  document.getElementById('mgrStats').innerHTML =
+    `<div class="stat"><div class="stat-n" style="color:var(--pink)">${prog}</div><div class="stat-l">進行中</div></div>
+     <div class="stat"><div class="stat-n" style="color:var(--gold)">${hon}</div><div class="stat-l">本刷り以降</div></div>
+     <div class="stat"><div class="stat-n" style="color:var(--green)">${done}</div><div class="stat-l">完了</div></div>
+     <div class="stat"><div class="stat-n" style="color:var(--ink-mid)">${cases.length}</div><div class="stat-l">総案件</div></div>`;
+
+  const factPay = {};
+  cases.forEach(([,c]) => { if(c.estimate&&c.factory) factPay[c.factory]=(factPay[c.factory]||0)+c.estimate; });
+  const total = Object.values(factPay).reduce((a,b)=>a+b,0);
+  document.getElementById('payTotal').textContent = '¥' + total.toLocaleString();
+  document.getElementById('payDet').innerHTML =
+    Object.entries(factPay).map(([f,a])=>`<div class="prow"><span>${f}</span><span>¥${a.toLocaleString()}</span></div>`).join('') +
+    `<div class="ptot"><span style="font-weight:700">合計</span><span style="font-weight:900">¥${total.toLocaleString()}</span></div>`;
+
+  const counts = {}; ST.forEach(s => { counts[s.key] = cases.filter(([,c])=>c.status===s.key).length; });
+  let fHtml = `<button class="fil ${filterSt==='all'?'on':''}" onclick="setFilter('all')">すべて ${cases.length}</button>`;
+  ST.forEach(s => { fHtml += `<button class="fil ${filterSt===s.key?'on':''}" onclick="setFilter('${s.key}')">${s.key} ${counts[s.key]}</button>`; });
+  document.getElementById('mgrFilters').innerHTML = fHtml;
+
+  const filtered = filterSt === 'all' ? cases : cases.filter(([,c])=>c.status===filterSt);
+  document.getElementById('mgrCases').innerHTML = filtered.length === 0
+    ? '<div class="notice" style="background:#f9f8ff;color:var(--ink-light);margin-top:20px">該当する案件はありません</div>'
+    : filtered.map(([id,c]) => {
+        const st = ST.find(s=>s.key===c.status)||ST[0];
+        return `<div class="ccard" onclick="openCase('${id}','mgr')">
+          <div class="cdot"></div>
+          <div style="flex:1;min-width:0"><div class="ctitle">${c.studentName}</div><div class="csub">${c.designName}</div></div>
+          <div class="cright">
+            <span class="cfct">${c.factory||'未定'}</span>
+            <span class="cbadge" style="color:${st.color};border-color:${st.color}">${c.status}</span>
+          </div>
+        </div>`;
+      }).join('');
+}
+
+function togglePay() { payOpen=!payOpen; document.getElementById('payDet').classList.toggle('hidden',!payOpen); }
+function setFilter(s) { filterSt=s; isAdmin()?renderMgrList():renderFctList(); }
+
+// ═══════════════════════════════════════════
+// FACTORY LIST
+// ═══════════════════════════════════════════
+function renderFctList() {
+  const fName = role==='factory_ena'?'恵那シルク':'昭和転写';
+  const cases = Object.entries(casesData).filter(([,c])=>c.factory===fName);
+  const counts = {}; ST.forEach(s => { counts[s.key]=cases.filter(([,c])=>c.status===s.key).length; });
+  let fHtml = `<button class="fil ${filterSt==='all'?'on':''}" onclick="setFilter('all')">すべて ${cases.length}</button>`;
+  ST.forEach(s => { if(counts[s.key]>0) fHtml+=`<button class="fil ${filterSt===s.key?'on':''}" onclick="setFilter('${s.key}')">${s.key} ${counts[s.key]}</button>`; });
+  document.getElementById('fctFilters').innerHTML = fHtml;
+  const filtered = filterSt==='all'?cases:cases.filter(([,c])=>c.status===filterSt);
+  document.getElementById('fctCases').innerHTML = filtered.length===0
+    ? '<div class="notice" style="background:#f9f8ff;color:var(--ink-light);margin-top:20px">担当案件はありません</div>'
+    : filtered.map(([id,c])=>{
+        const st=ST.find(s=>s.key===c.status)||ST[0];
+        return `<div class="ccard" onclick="openCase('${id}','fct')">
+          <div class="cdot"></div>
+          <div style="flex:1;min-width:0"><div class="ctitle">${c.studentName}</div><div class="csub">${c.designName}</div></div>
+          <div class="cright"><span class="cbadge" style="color:${st.color};border-color:${st.color}">${c.status}</span></div>
+        </div>`;
+      }).join('');
+}
+
+// ═══════════════════════════════════════════
+// OPEN / BACK
+// ═══════════════════════════════════════════
+function openCase(id, view) {
+  currentId = id;
+  const c = casesData[id];
+  if (view === 'mgr') {
+    document.getElementById('mgrList').classList.add('hidden');
+    document.getElementById('mgrDet').classList.remove('hidden');
+    renderMgrDet(c);
+    startMsgListen('mgr');
+    db.ref('cases/'+id).on('value', s => { if(s.val()){ casesData[id]=s.val(); renderMgrDet(s.val()); } });
+  } else {
+    document.getElementById('fctList').classList.add('hidden');
+    document.getElementById('fctDet').classList.remove('hidden');
+    renderFctDet(c);
+    startMsgListen('fct');
+    db.ref('cases/'+id).on('value', s => { if(s.val()){ casesData[id]=s.val(); renderFctDet(s.val()); } });
+  }
+}
+
+function backToList(view) {
+  currentId = null;
+  if (msgOff) { msgOff(); msgOff = null; }
+  if (view==='mgr') {
+    document.getElementById('mgrDet').classList.add('hidden');
+    document.getElementById('mgrList').classList.remove('hidden');
+  } else {
+    document.getElementById('fctDet').classList.add('hidden');
+    document.getElementById('fctList').classList.remove('hidden');
+  }
+}
+
+// ═══════════════════════════════════════════
+// MANAGER DETAIL
+// ═══════════════════════════════════════════
+function renderMgrDet(c) {
+  const stuUrl = c.studentKey ? `${location.origin}${location.pathname}?s=${c.studentKey}` : '';
+  let html = `<div style="font-size:16px;font-weight:800;margin-bottom:10px">${c.studentName} — ${c.designName}</div>
+    <div class="igrid">
+      <div class="ibox"><div class="ilbl">仕様</div><div class="ival">${c.spec||'—'}</div></div>
+      <div class="ibox"><div class="ilbl">工場</div><div class="ival">${c.factory||'未定'}</div></div>
+    </div>
+    ${c.studentEmail?`<div class="ibox" style="margin-bottom:6px"><div class="ilbl">メールアドレス</div><div class="ival" style="font-size:13px">${c.studentEmail}</div></div>`:''}
+    ${c.studentTel?`<div class="ibox" style="margin-bottom:6px"><div class="ilbl">電話番号</div><div class="ival" style="font-size:13px">${c.studentTel}</div></div>`:''}
+    ${c.studentAddr?`<div class="ibox" style="margin-bottom:6px"><div class="ilbl">住所</div><div class="ival" style="font-size:13px">${c.studentAddr}</div></div>`:''}`;
+  if (c.estimate) {
+    html += `<div class="agrid">
+      <div class="abox"><div class="ilbl">見積（税抜）</div><div class="ival">¥${(c.estimate||0).toLocaleString()}</div></div>
+      <div class="abox" style="background:#f0fdf4"><div class="ilbl">請求金額</div><div class="ival" style="color:var(--green)">¥${(c.finalAmount||0).toLocaleString()}</div></div>
+      <div class="abox" style="background:#fef3c7"><div class="ilbl">手数料</div><div class="ival" style="color:var(--gold)">¥${(c.markup||0).toLocaleString()}</div></div>
+    </div>`;
+  }
+  if (c.note) html += `<div style="font-size:12px;color:var(--ink-light);padding:6px 8px;background:#f9f8ff;border-radius:8px;margin-bottom:10px">${c.note}</div>`;
+  if (stuUrl && role==='admin') {
+    html += `<div style="background:var(--pink-bg);border:1.5px solid var(--pink-l);border-radius:10px;padding:10px 12px;margin-bottom:10px">
+      <div style="font-size:10px;color:#9f4455;margin-bottom:4px">🔗 生徒用URL</div>
+      <div style="font-size:11px;color:#9f4455;word-break:break-all;margin-bottom:6px">${stuUrl}</div>
+      <button onclick="copyStudentUrl('${stuUrl}')" style="padding:5px 14px;background:var(--pink-l);border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">📋 URLをコピー</button>
+    </div>`;
+  }
+  if (role==='admin') html += `<button class="del-btn" onclick="deleteCase()">🗑️ この案件を削除</button>`;
+  document.getElementById('mgrInfo').innerHTML = html;
+  document.getElementById('mgrFlow').innerHTML = ST.map(s=>{
+    const on=c.status===s.key;
+    return `<span class="step" style="background:${on?s.color:'transparent'};color:${on?'#fff':s.color};border-color:${s.color};opacity:${on?1:0.4}">${s.key}</span>`;
+  }).join('');
+  renderAdv(c, 'mgrAdv');
+  if (!document.getElementById('mgrmta')) renderInput('mgrIn');
+}
+
+// ═══════════════════════════════════════════
+// FACTORY DETAIL
+// ═══════════════════════════════════════════
+function renderFctDet(c) {
+  document.getElementById('fctInfo').innerHTML = `
+    <div style="font-size:16px;font-weight:800;margin-bottom:10px">${c.studentName} — ${c.designName}</div>
+    <div class="igrid">
+      <div class="ibox"><div class="ilbl">仕様</div><div class="ival">${c.spec||'—'}</div></div>
+      <div class="ibox"><div class="ilbl">ステータス</div><div class="ival">${c.status}</div></div>
+    </div>
+    ${c.note?`<div style="font-size:12px;color:var(--ink-light);padding:6px 8px;background:#f9f8ff;border-radius:8px">${c.note}</div>`:''}`;
+  document.getElementById('fctFlow').innerHTML = ST.map(s=>{
+    const on=c.status===s.key;
+    return `<span class="step" style="background:${on?s.color:'transparent'};color:${on?'#fff':s.color};border-color:${s.color};opacity:${on?1:0.4}">${s.key}</span>`;
+  }).join('');
+  if (!document.getElementById('fctmta')) renderInput('fctIn');
+}
+
+// ═══════════════════════════════════════════
+// ADVANCE STATUS / ESTIMATE
+// ═══════════════════════════════════════════
+function renderAdv(c, id) {
+  if (!isAdmin()) { document.getElementById(id).innerHTML=''; return; }
+  const st = ST.find(s=>s.key===c.status);
+  const next = st?st.next:null;
+  let html = `<div style="font-size:12px;font-weight:700;color:var(--ink-mid);margin-bottom:8px">📌 ステータス変更</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">`;
+  ST.forEach(s => {
+    html += `<button class="step" onclick="advSt('${s.key}')" style="background:${c.status===s.key?s.color:'transparent'};color:${c.status===s.key?'#fff':s.color};border-color:${s.color};opacity:1;cursor:pointer">${s.key}</button>`;
+  });
+  html += `</div>`;
+  if (next) html += `<button onclick="advSt('${next}')" style="padding:8px 16px;background:var(--green);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:8px">→ ${next} に進める</button>`;
+  html += `<div style="font-size:12px;font-weight:700;color:var(--ink-mid);margin-bottom:6px">💰 お見積入力（税抜）</div>
+    <div class="est-row">
+      <input class="est-inp" id="estVal" type="number" placeholder="見積金額" value="${c.estimate||''}">
+      <span style="font-size:12px;color:var(--ink-light)">× マークアップ</span>
+      <input class="est-inp" id="mkpVal" type="number" placeholder="手数料%" value="${c.markup||''}">
+      <button class="est-btn" onclick="inputEst()">確定</button>
+    </div>`;
+  document.getElementById(id).innerHTML = html;
+}
+
+function advSt(to) { if(currentId) db.ref('cases/'+currentId).update({status:to, statusDate:today()}); }
+function inputEst() {
+  if (!currentId) return;
+  const est=parseInt(document.getElementById('estVal').value)||0;
+  const mkp=parseInt(document.getElementById('mkpVal').value)||0;
+  db.ref('cases/'+currentId).update({estimate:est, markup:mkp, finalAmount:Math.round(est*(1+mkp/100))});
+}
+
+// ═══════════════════════════════════════════
+// MESSAGES — rendering
+// ═══════════════════════════════════════════
+function startMsgListen(view) {
+  if (msgOff) { msgOff(); msgOff = null; }
+  const ref = db.ref('messages/'+currentId);
+  const handler = ref.on('value', snap => renderMsgs(snap.val(), view));
+  msgOff = () => ref.off('value', handler);
+}
+
+function renderMsgs(msgs, view) {
+  const el = document.getElementById(view+'Msgs');
+  if (!msgs) {
+    el.innerHTML = '<div style="text-align:center;color:var(--ink-light);font-size:13px;padding:20px">まだメッセージはありません</div>';
+    return;
+  }
+  const sorted = Object.entries(msgs).sort(([,a],[,b])=>a.timestamp-b.timestamp);
+
+  if (view === 'mgr') {
+    // Admin sees ALL messages — pending as approval cards, forwarded as bubbles
+    el.innerHTML = sorted.map(([mid, m]) => {
+      if (m.status === 'pending') {
+        return renderPendingCard(mid, m);
+      } else {
+        return renderBubble(m, 'mgr');
+      }
+    }).join('');
+  } else if (view === 'fct') {
+    // Factory sees: their own sent messages (pending) + messages forwarded to them
+    const visible = sorted.filter(([,m]) =>
+      (isFactory() && (m.sender==='factory_ena'||m.sender==='factory_shouwa') && m.status==='pending') ||
+      (m.status==='forwarded' && m.forwardTo==='factory')
+    );
+    el.innerHTML = visible.length===0
+      ? '<div style="text-align:center;color:var(--ink-light);font-size:13px;padding:20px">まだメッセージはありません</div>'
+      : visible.map(([,m]) => renderBubble(m,'fct')).join('');
+  } else if (view === 'stu') {
+    // Student sees: their own sent messages (pending) + messages forwarded to them
+    const visible = sorted.filter(([,m]) =>
+      (m.sender === 'student' && m.status === 'pending') ||
+      (m.status === 'forwarded' && m.forwardTo === 'student')
+    );
+    el.innerHTML = visible.length===0
+      ? '<div style="text-align:center;color:var(--ink-light);font-size:13px;padding:20px">まだメッセージはありません</div>'
+      : visible.map(([,m]) => renderBubble(m,'stu')).join('');
+  }
+  el.scrollTop = el.scrollHeight;
+}
+
+function renderPendingCard(mid, m) {
+  const c = casesData[currentId] || {};
+  const canFwdToStu = m.sender !== 'student';  // factory → student
+  const canFwdToFct = m.sender !== 'factory_ena' && m.sender !== 'factory_shouwa'; // student → factory
+  const imgHtml = m.imageUrl
+    ? `<img src="${m.imageUrl}" class="pending-img" onclick="window.open('${m.imageUrl}','_blank')">`
+    : '';
+  const editArea = m.imageUrl ? '' :
+    `<textarea class="pending-edit" id="edit_${mid}" rows="2">${m.text||''}</textarea>`;
+  let fwdBtns = '';
+  if (canFwdToStu) fwdBtns += `<button class="fwd-btn fwd-to-stu" onclick="forwardMsg('${mid}','student')">→ 生徒に転送</button>`;
+  if (canFwdToFct) fwdBtns += `<button class="fwd-btn fwd-to-fct" onclick="forwardMsg('${mid}','factory')">→ 工場に転送</button>`;
+  return `<div class="pending-card" id="pcard_${mid}">
+    <div class="pending-head">
+      <span class="pending-tag">⏳ 承認待ち</span>
+      <span class="pending-from">${m.senderLabel||m.sender} · ${fmtTime(m.timestamp)}</span>
+    </div>
+    <div class="pending-body">${m.text||''}</div>
+    ${imgHtml}
+    ${editArea}
+    <div class="fwd-row">
+      ${fwdBtns}
+      ${role==='admin'?`<button class="del-msg-btn" onclick="deleteMsg('${mid}')">削除</button>`:''}
+    </div>
+  </div>`;
+}
+
+function renderBubble(m, view) {
+  const isMe = (view==='mgr' && (m.sender==='admin'||m.sender==='goto')) ||
+               (view==='fct' && isFactory()) ||
+               (view==='stu' && m.sender==='student');
+  // For factory/student: show original sender label
+  const label = m.senderLabel || m.sender;
+  const text  = m.forwardedText || m.text || '';
+  const side  = isMe ? 'me' : 'them';
+  const inner = m.imageUrl
+    ? `<img src="${m.imageUrl}" class="mimg" onclick="window.open('${m.imageUrl}','_blank')">`
+    : `<div class="mbubble ${side}">${text}</div>`;
+  return `<div class="mwrap ${side}">
+    <div class="mlbl">${label}</div>
+    ${inner}
+    <div class="mtime">${fmtTime(m.timestamp)}</div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════
+// FORWARD / DELETE MESSAGE
+// ═══════════════════════════════════════════
+function forwardMsg(mid, forwardTo) {
+  if (!currentId) return;
+  const c = casesData[currentId] || {};
+  const editEl = document.getElementById('edit_' + mid);
+  const editedText = editEl ? editEl.value.trim() : null;
+
+  const updates = { status: 'forwarded', forwardTo, forwardedAt: ts() };
+  if (editedText !== null) updates.forwardedText = editedText;
+
+  db.ref('messages/' + currentId + '/' + mid).update(updates).then(() => {
+    // Get updated message for notification
+    db.ref('messages/' + currentId + '/' + mid).once('value', snap => {
+      if (snap.val()) notifyForwarded(snap.val(), c);
+    });
+  });
+}
+
+function deleteMsg(mid) {
+  if (!currentId || role !== 'admin') return;
+  if (!confirm('このメッセージを削除しますか？')) return;
+  db.ref('messages/' + currentId + '/' + mid).remove();
+}
+
+// ═══════════════════════════════════════════
+// INPUT AREA
+// ═══════════════════════════════════════════
+function renderInput(containerId) {
+  const prefix = containerId.replace('In','');
+  document.getElementById(containerId).innerHTML = `
+    <div class="mrow">
+      <textarea class="mta" id="${prefix}mta" rows="2" placeholder="メッセージを入力..."></textarea>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+      <span class="file-lbl">📎 画像添付：</span>
+      <input type="file" id="${prefix}file" accept="image/*" style="font-size:12px;flex:1;min-width:0">
+    </div>
+    <button class="sbtn" id="${prefix}sendbtn" style="width:100%" onclick="sendAll('${prefix}')">送信</button>`;
+}
+
+async function sendAll(prefix) {
+  const taEl  = document.getElementById(prefix + 'mta');
+  const fileEl = document.getElementById(prefix + 'file');
+  const text  = taEl?.value?.trim() || '';
+  const file  = fileEl?.files?.[0];
+  if (!text && !file) return;
+  const btn = document.getElementById(prefix + 'sendbtn');
+  if (btn) { btn.textContent = '送信中...'; btn.disabled = true; }
+  try {
+    if (text) { submitMsg(prefix, text, null); taEl.value = ''; }
+    if (file) {
+      const url = await uploadImage(file);
+      submitMsg(prefix, '', url);
+      fileEl.value = '';
+    }
+  } catch(e) { alert('送信に失敗しました。'); }
+  if (btn) { btn.textContent = '送信'; btn.disabled = false; }
+}
+
+function submitMsg(prefix, text, imageUrl) {
+  if (!currentId) return;
+  const c  = casesData[currentId] || {};
+  const sl = role==='admin'?'Rie':role==='goto'?'後藤愛':role==='factory_ena'?'恵那シルク':role==='factory_shouwa'?'昭和転写':c.studentName||'生徒';
+
+  let status, forwardTo;
+  if (isAdmin()) {
+    // Admin messages go directly as forwarded — admin decides direction
+    status    = 'forwarded';
+    forwardTo = 'both'; // visible to both in bubble form
+  } else if (isFactory()) {
+    status    = 'pending';
+    forwardTo = null;
+  } else {
+    // student
+    status    = 'pending';
+    forwardTo = null;
+  }
+
+  const msg = {
+    sender: role, senderLabel: sl,
+    text: text || '', imageUrl: imageUrl || null,
+    timestamp: ts(), status, forwardTo,
+  };
+  if (!imageUrl) delete msg.imageUrl;
+
+  db.ref('messages/'+currentId).push(msg).then(() => {
+    if (status === 'pending') notifyPending(msg, c);
+  });
+}
+
+function sendMsg(taId) {
+  const text = document.getElementById(taId)?.value?.trim();
+  if (!text || !currentId) return;
+  submitMsg(taId.replace('mta',''), text, null);
+  document.getElementById(taId).value = '';
+}
+
+// ═══════════════════════════════════════════
+// STUDENT SEND (pending to factory)
+// ═══════════════════════════════════════════
+async function sendStuAll() {
+  const text = document.getElementById('stuta')?.value?.trim() || '';
+  const fileInput = document.getElementById('stufile');
+  const file = fileInput?.files?.[0];
+  if (!text && !file) return;
+  if (!currentId) return;
+  const c = casesData[currentId] || {};
+
+  const sendBtn = document.querySelector('#stuIn .sbtn');
+  if (sendBtn) { sendBtn.textContent = '送信中...'; sendBtn.disabled = true; }
+
+  try {
+    if (text) {
+      const msg = {sender:'student', senderLabel:c.studentName||'生徒', text, timestamp:ts(), status:'pending', forwardTo:null};
+      await db.ref('messages/'+currentId).push(msg);
+      notifyPending(msg, c);
+      document.getElementById('stuta').value = '';
+    }
+    if (file) {
+      const url = await uploadImage(file);
+      const msg = {sender:'student', senderLabel:c.studentName||'生徒', text:'', imageUrl:url, timestamp:ts(), status:'pending', forwardTo:null};
+      await db.ref('messages/'+currentId).push(msg);
+      notifyPending(msg, c);
+      fileInput.value = '';
+    }
+  } catch(e) {
+    alert('送信に失敗しました。再度お試しください。');
+  }
+  if (sendBtn) { sendBtn.textContent = '送信'; sendBtn.disabled = false; }
+}
+
+function sendStu() {
+  const text = document.getElementById('stuta')?.value?.trim();
+  if (!text || !currentId) return;
+  const c  = casesData[currentId] || {};
+  const msg = {
+    sender:'student', senderLabel:c.studentName||'生徒',
+    text, timestamp:ts(), status:'pending', forwardTo:null,
+  };
+  db.ref('messages/'+currentId).push(msg).then(() => notifyPending(msg, c));
+  document.getElementById('stuta').value = '';
+}
+
+async function sendStuImage() {
+  const fileInput = document.getElementById('stufile');
+  if (!fileInput || !fileInput.files[0] || !currentId) return;
+  const c   = casesData[currentId] || {};
+  const btn = document.getElementById('stuimgbtn');
+  if (btn) { btn.textContent = '送信中...'; btn.disabled = true; }
+  try {
+    const url = await uploadImage(fileInput.files[0]);
+    const msg = {
+      sender:'student', senderLabel:c.studentName||'生徒',
+      text:'', imageUrl:url, timestamp:ts(), status:'pending', forwardTo:null,
+    };
+    db.ref('messages/'+currentId).push(msg).then(() => notifyPending(msg, c));
+    fileInput.value = '';
+    if (btn) { btn.textContent = '送信'; btn.disabled = false; }
+  } catch(e) {
+    alert('画像のアップロードに失敗しました。');
+    if (btn) { btn.textContent = '送信'; btn.disabled = false; }
+  }
+}
+
+// ═══════════════════════════════════════════
+// STUDENT VIEW
+// ═══════════════════════════════════════════
+function renderStuDet(c) {
+  document.getElementById('stuInfo').innerHTML = `
+    <div style="font-size:15px;font-weight:800;margin-bottom:10px">${c.designName}</div>
+    <div class="igrid">
+      <div class="ibox"><div class="ilbl">仕様</div><div class="ival">${c.spec||'—'}</div></div>
+      <div class="ibox"><div class="ilbl">担当工場</div><div class="ival">${c.factory||'担当決定待ち'}</div></div>
+    </div>
+    ${c.finalAmount?`<div class="abox" style="background:#f0fdf4;margin-bottom:10px"><div class="ilbl">お見積金額（税抜）</div><div class="ival" style="color:var(--green);font-size:18px">¥${c.finalAmount.toLocaleString()}</div></div>`:''}
+    ${c.note?`<div style="font-size:12px;color:var(--ink-light)">${c.note}</div>`:''}`;
+  document.getElementById('stuFlow').innerHTML = ST.map(s=>{
+    const on=c.status===s.key;
+    return `<span class="step" style="background:${on?s.color:'transparent'};color:${on?'#fff':s.color};border-color:${s.color};opacity:${on?1:0.4}">${s.key}</span>`;
+  }).join('');
+  if (!document.getElementById('stuta')) {
+    document.getElementById('stuIn').innerHTML = `
+      <div class="mrow">
+        <textarea class="mta" id="stuta" rows="2" placeholder="工場へメッセージを送る..."></textarea>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
+        <span class="file-lbl">📎 画像添付：</span>
+        <input type="file" id="stufile" accept="image/*" style="font-size:12px;flex:1;min-width:0">
+      </div>
+      <button class="sbtn" style="width:100%" onclick="sendStuAll()">送信</button>`;
+  }
+}
+
+// ═══════════════════════════════════════════
+// STUDENT URL CHECK
+// ═══════════════════════════════════════════
+// ═══════════════════════════════════════════
+// REGISTRATION FORM
+// ═══════════════════════════════════════════
+let regGenUrl = '';
+
+function checkRegisterUrl() {
+  const reg = new URLSearchParams(location.search).get('register');
+  if (!reg) return false;
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('registerScreen').classList.remove('hidden');
+  document.getElementById('registerScreen').style.display = 'flex';
+  return true;
+}
+
+async function submitRegister() {
+  const name   = document.getElementById('rf_name').value.trim();
+  const email  = document.getElementById('rf_email').value.trim();
+  const design = document.getElementById('rf_design').value.trim();
+  if (!name || !email || !design) {
+    document.getElementById('regErr').classList.remove('hidden'); return;
+  }
+  document.getElementById('regErr').classList.add('hidden');
+  const btn = document.querySelector('#regForm .btn-p');
+  if (btn) { btn.textContent = '送信中...'; btn.disabled = true; }
+  try {
+    const key = genKey();
+    await db.ref('cases').push({
+      studentName:  name,
+      studentEmail: email,
+      studentTel:   document.getElementById('rf_tel').value.trim(),
+      studentAddr:  document.getElementById('rf_addr').value.trim(),
+      designName:   design,
+      spec:         document.getElementById('rf_spec').value,
+      note:         document.getElementById('rf_note').value.trim(),
+      studentKey:   key,
+      status:       '入稿受付',
+      statusDate:   today(),
+      factory:      '',
+      estimate:     0, finalAmount: 0, markup: 0,
+      createdAt:    ts(),
+    });
+    const url = `${location.origin}${location.pathname}?s=${key}`;
+    regGenUrl = url;
+    document.getElementById('regUrl').textContent = url;
+    document.getElementById('regForm').classList.add('hidden');
+    document.getElementById('regDone').classList.remove('hidden');
+    // Notify admin
+    sendNotification(RIE_EMAIL,  name, design, name, 'フォームからの新規お申込みがありました');
+    sendNotification(GOTO_EMAIL, name, design, name, 'フォームからの新規お申込みがありました');
+  } catch(e) {
+    alert('送信に失敗しました。再度お試しください。');
+    if (btn) { btn.textContent = '送信する'; btn.disabled = false; }
+  }
+}
+
+function copyRegUrl() {
+  navigator.clipboard.writeText(regGenUrl).then(() => alert('URLをコピーしました！大切に保管してください。'));
+}
+
+function checkStudentUrl() {
+  const key = new URLSearchParams(location.search).get('s');
+  if (!key) return;
+  role = 'student';
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('studentApp').style.display  = 'flex';
+  document.getElementById('studentApp').classList.add('active');
+  document.getElementById('stuInfo').innerHTML = '<div style="text-align:center;padding:40px;color:var(--pink)">読み込み中...</div>';
+  const timer = setTimeout(() => showStuErr('タイムアウトしました。ページを再読み込みしてください。'), 15000);
+  db.ref('cases').once('value', snap => {
+    clearTimeout(timer);
+    const all = snap.val();
+    if (!all) { showStuErr('案件が見つかりません。'); return; }
+    const entry = Object.entries(all).find(([,c])=>c.studentKey===key);
+    if (!entry) { showStuErr('案件が見つかりません。URLをご確認ください。'); return; }
+    const [cid, c] = entry;
+    currentId = cid; casesData[cid] = c;
+    document.getElementById('stuName').textContent = c.studentName;
+    renderStuDet(c);
+    startMsgListen('stu');
+    db.ref('cases/'+cid).on('value', s2=>{
+      if(s2.val()){ casesData[cid]=s2.val(); renderStuDet(s2.val()); }
+    });
+  }, err => { clearTimeout(timer); showStuErr('接続エラー: '+err.message); });
+}
+
+function showStuErr(msg) {
+  document.getElementById('stuBody').classList.add('hidden');
+  document.getElementById('stuNF').classList.remove('hidden');
+  document.getElementById('stuNF').querySelector('.notice').textContent = msg;
+}
+
+// ═══════════════════════════════════════════
+// ADD / DELETE CASE
+// ═══════════════════════════════════════════
+function openAdd() {
+  ['fs','fem','fn','fno'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('fsp').value='A4を2面付け';
+  document.getElementById('ff').value='';
+  document.getElementById('addErr').classList.add('hidden');
+  document.getElementById('urlArea').classList.add('hidden');
+  document.getElementById('saveBtn').classList.remove('hidden');
+  document.getElementById('addModal').classList.remove('hidden');
+}
+function closeAdd() { document.getElementById('addModal').classList.add('hidden'); }
+
+function saveCase() {
+  const student      = document.getElementById('fs').value.trim();
+  const studentEmail = document.getElementById('fem').value.trim();
+  const name         = document.getElementById('fn').value.trim();
+  if (!student||!name) { document.getElementById('addErr').classList.remove('hidden'); return; }
+  const key = genKey();
+  db.ref('cases').push({
+    studentName:student, studentEmail, designName:name,
+    spec:document.getElementById('fsp').value,
+    factory:document.getElementById('ff').value,
+    note:document.getElementById('fno').value,
+    studentKey:key, status:'入稿受付', statusDate:today(),
+    estimate:0, finalAmount:0, markup:0, createdAt:ts()
+  }).then(() => {
+    // 確実にリスト更新
+    db.ref('cases').once('value', s => { casesData = s.val() || {}; renderMgrList(); });
+  });
+  const url = `${location.origin}${location.pathname}?s=${key}`;
+  genUrl = url;
+  document.getElementById('urlBox').textContent = url;
+  document.getElementById('urlArea').classList.remove('hidden');
+  document.getElementById('saveBtn').classList.add('hidden');
+}
+
+function copyUrl() { navigator.clipboard.writeText(genUrl).then(()=>alert('コピーしました！このURLを生徒に送ってください。')); }
+function copyStudentUrl(url) { navigator.clipboard.writeText(url).then(()=>alert('コピーしました！生徒に送ってください。')); }
+
+function deleteCase() {
+  if (!currentId||role!=='admin') return;
+  if (!confirm('この案件を削除しますか？\nメッセージも含めて完全に削除されます。')) return;
+  const id = currentId;
+  backToList('mgr');
+  db.ref('cases/'+id).remove();
+  db.ref('messages/'+id).remove();
+}
+
+document.getElementById('addModal').addEventListener('click', e=>{
+  if(e.target.id==='addModal') closeAdd();
+});
+
+function goHome() {
+  if (role === 'admin' || role === 'goto') {
+    backToList('mgr');
+  } else if (isFactory()) {
+    backToList('fct');
+  } else {
+    // student: scroll to top
+    window.scrollTo(0,0);
+  }
+}
+
+if (!checkRegisterUrl()) checkStudentUrl();
+</script>
+</body>
+</html>
