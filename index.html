@@ -373,7 +373,7 @@ const db = firebase.database();
 const PW = {admin:'rierier0922', goto:'lavique.ai', factory_ena:'ena.lavique', factory_shouwa:'shouwa.lavique'};
 const RIE_EMAIL     = 'homesalonstyle@gmail.com';
 const GOTO_EMAIL    = 'ito.goto.1126@gmail.com';
-const FACTORY_EMAILS = {'恵那シルク':'rierier0922@gmail.com', '昭和転写':'sales@showadc.jp'};
+const FACTORY_EMAILS = {'恵那シルク':'rierier0922@gmail.com', '昭和転写':'rierier0922@yahoo.co.jp'};
 const CLOUD_NAME    = 'db5fgbtnn';
 const UPLOAD_PRESET = 'nsegom3j';
 const EJS_SERVICE   = 'service_vsfcefg';
@@ -386,16 +386,17 @@ emailjs.init('qynFxNvxQ0QvI8ih0');
 // STATUS STEPS
 // ═══════════════════════════════════════════
 const ST = [
-  {key:'入稿受付',    color:'#94a3b8', next:'データ調整中'},
-  {key:'データ調整中', color:'#f59e0b', next:'見積待ち'},
-  {key:'見積待ち',    color:'#3b82f6', next:'見積提示済み'},
-  {key:'見積提示済み', color:'#8b5cf6', next:'サンプル発注'},
-  {key:'サンプル発注', color:'#ec4899', next:'サンプル確認中'},
-  {key:'サンプル確認中',color:'#f97316', next:'本刷り見積待ち'},
-  {key:'本刷り見積待ち',color:'#14b8a6', next:'本刷り発注'},
-  {key:'本刷り発注',  color:'#ea580c', next:'納品完了'},
-  {key:'納品完了',    color:'#10b981', next:'入金済'},
-  {key:'入金済',      color:'#c9768a', next:null},
+  {key:'入稿受付',       color:'#94a3b8', next:'データ調整中'},
+  {key:'データ調整中',    color:'#f59e0b', next:'見積待ち'},
+  {key:'見積待ち',       color:'#3b82f6', next:'見積提示済み'},
+  {key:'見積提示済み',    color:'#8b5cf6', next:'サンプル費用入金'},
+  {key:'サンプル費用入金', color:'#06b6d4', next:'サンプル発注'},
+  {key:'サンプル発注',    color:'#ec4899', next:'サンプル確認中'},
+  {key:'サンプル確認中',  color:'#f97316', next:'本刷り見積待ち'},
+  {key:'本刷り見積待ち',  color:'#14b8a6', next:'本刷り発注'},
+  {key:'本刷り発注',     color:'#ea580c', next:'本刷り入金'},
+  {key:'本刷り入金',     color:'#c9768a', next:'納品完了'},
+  {key:'納品完了',       color:'#10b981', next:null},
 ];
 
 // ═══════════════════════════════════════════
@@ -573,9 +574,10 @@ function renderMgrList() {
     ? '<div class="notice" style="background:#f9f8ff;color:var(--ink-light);margin-top:20px">該当する案件はありません</div>'
     : filtered.map(([id,c]) => {
         const st = ST.find(s=>s.key===c.status)||ST[0];
+        const dateStr = c.createdAt ? new Date(c.createdAt).toLocaleDateString('ja-JP',{month:'numeric',day:'numeric'}) : c.statusDate||'';
         return `<div class="ccard" onclick="openCase('${id}','mgr')">
           <div class="cdot"></div>
-          <div style="flex:1;min-width:0"><div class="ctitle">${c.studentName}</div><div class="csub">${c.designName}</div></div>
+          <div style="flex:1;min-width:0"><div class="ctitle">${c.studentName} <span style="font-size:11px;color:var(--ink-light);font-weight:400">${dateStr}</span></div><div class="csub">${c.designName}</div></div>
           <div class="cright">
             <span class="cfct">${c.factory||'未定'}</span>
             <span class="cbadge" style="color:${st.color};border-color:${st.color}">${c.status}</span>
@@ -602,9 +604,10 @@ function renderFctList() {
     ? '<div class="notice" style="background:#f9f8ff;color:var(--ink-light);margin-top:20px">担当案件はありません</div>'
     : filtered.map(([id,c])=>{
         const st=ST.find(s=>s.key===c.status)||ST[0];
+        const dateStr2 = c.createdAt ? new Date(c.createdAt).toLocaleDateString('ja-JP',{month:'numeric',day:'numeric'}) : c.statusDate||'';
         return `<div class="ccard" onclick="openCase('${id}','fct')">
           <div class="cdot"></div>
-          <div style="flex:1;min-width:0"><div class="ctitle">${c.studentName}</div><div class="csub">${c.designName}</div></div>
+          <div style="flex:1;min-width:0"><div class="ctitle">${c.studentName} <span style="font-size:11px;color:var(--ink-light);font-weight:400">${dateStr2}</span></div><div class="csub">${c.designName}</div></div>
           <div class="cright"><span class="cbadge" style="color:${st.color};border-color:${st.color}">${c.status}</span></div>
         </div>`;
       }).join('');
@@ -671,7 +674,10 @@ function renderMgrDet(c) {
       <button onclick="copyStudentUrl('${stuUrl}')" style="padding:5px 14px;background:var(--pink-l);border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">📋 URLをコピー</button>
     </div>`;
   }
-  if (role==='admin') html += `<button class="del-btn" onclick="deleteCase()">🗑️ この案件を削除</button>`;
+  if (role==='admin') {
+    html += `<button onclick="notifyFactory()" style="width:100%;padding:9px;background:#dbeafe;border:1.5px solid #93c5fd;border-radius:10px;color:#1d4ed8;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:6px">📨 新規入稿を工場に通知する</button>`;
+    html += `<button class="del-btn" onclick="deleteCase()">🗑️ この案件を削除</button>`;
+  }
   document.getElementById('mgrInfo').innerHTML = html;
   document.getElementById('mgrFlow').innerHTML = ST.map(s=>{
     const on=c.status===s.key;
@@ -721,6 +727,17 @@ function renderAdv(c, id) {
       <button class="est-btn" onclick="inputEst()">確定</button>
     </div>`;
   document.getElementById(id).innerHTML = html;
+}
+
+function notifyFactory() {
+  if (!currentId) return;
+  const c = casesData[currentId] || {};
+  if (!c.factory) { alert('担当工場が設定されていません。先に工場を設定してください。'); return; }
+  const fe = FACTORY_EMAILS[c.factory];
+  if (!fe) { alert('工場のメールアドレスが見つかりません。'); return; }
+  sendNotification(fe, 'Lavique管理者', c.designName, c.studentName, '新規入稿がありました。ご確認をお願いします。');
+  sendNotification(RIE_EMAIL, 'Lavique', c.designName, c.studentName, c.factory + 'に新規入稿通知を送りました。');
+  alert(c.factory + 'に新規入稿の通知メールを送りました！');
 }
 
 function advSt(to) { if(currentId) db.ref('cases/'+currentId).update({status:to, statusDate:today()}); }
