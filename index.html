@@ -144,6 +144,15 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--ink)
 .del-btn{width:100%;padding:9px;background:#fff0f0;border:1.5px solid #fca5a5;border-radius:10px;color:var(--red);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:4px;}
 .url-area{background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:12px;margin-bottom:10px;}
 .url-text{font-size:12px;word-break:break-all;color:#065f46;margin-bottom:8px;}
+.date-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;}
+.date-box{background:#f9f8ff;border-radius:10px;padding:8px 10px;}
+.date-lbl{font-size:10px;color:var(--ink-light);margin-bottom:4px;}
+.date-val{font-size:13px;font-weight:700;color:var(--ink);}
+.date-inp-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+.date-inp-box{background:#f9f8ff;border-radius:10px;padding:8px 10px;}
+.date-inp-lbl{font-size:10px;color:var(--ink-light);margin-bottom:4px;}
+.date-inp{width:100%;border:1.5px solid var(--border);border-radius:6px;padding:5px 8px;font-size:12px;font-family:inherit;outline:none;background:#fff;}
+.date-inp:focus{border-color:var(--pink);}
 .cpbtn{width:100%;padding:10px;background:var(--green);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;margin-bottom:8px;}
 #registerScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(145deg,#1a1625,#c9768a);padding:24px;}
 </style>
@@ -579,9 +588,21 @@ function renderMgrList() {
     : filtered.map(([id,c]) => {
         const st = ST.find(s=>s.key===c.status)||ST[0];
         const dateStr = c.createdAt ? new Date(c.createdAt).toLocaleDateString('ja-JP',{month:'numeric',day:'numeric'}) : c.statusDate||'';
+        const smpLav = c.quoteSample ? '¥'+(Math.round(c.quoteSample*1.1)).toLocaleString() : '';
+        const honLav = c.quoteHon    ? '¥'+(Math.round(c.quoteHon*1.1)).toLocaleString()    : '';
+        const dateTags = [
+          c.dateSampleEst  ? `<span style="font-size:10px;background:#ede9fe;color:#6d28d9;border-radius:4px;padding:1px 5px">版代見積 ${c.dateSampleEst}${smpLav?' '+smpLav:''}</span>` : '',
+          c.dateSamplePaid ? `<span style="font-size:10px;background:#dcfce7;color:#166534;border-radius:4px;padding:1px 5px">版代入金 ${c.dateSamplePaid}</span>` : '',
+          c.dateHonEst     ? `<span style="font-size:10px;background:#dbeafe;color:#1d4ed8;border-radius:4px;padding:1px 5px">本刷見積 ${c.dateHonEst}${honLav?' '+honLav:''}</span>` : '',
+          c.dateHonPaid    ? `<span style="font-size:10px;background:#fef3c7;color:#92400e;border-radius:4px;padding:1px 5px">本刷入金 ${c.dateHonPaid}</span>` : '',
+        ].filter(Boolean).join(' ');
         return `<div class="ccard" onclick="openCase('${id}','mgr')">
           <div class="cdot"></div>
-          <div style="flex:1;min-width:0"><div class="ctitle">${c.studentName} <span style="font-size:11px;color:var(--ink-light);font-weight:400">${dateStr}</span></div><div class="csub">${c.designName}</div></div>
+          <div style="flex:1;min-width:0">
+            <div class="ctitle">${c.studentName} <span style="font-size:11px;color:var(--ink-light);font-weight:400">入稿 ${dateStr}</span></div>
+            <div class="csub">${c.designName}</div>
+            ${dateTags ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px">${dateTags}</div>` : ''}
+          </div>
           <div class="cright">
             <span class="cfct">${c.factory||'未定'}</span>
             <span class="cbadge" style="color:${st.color};border-color:${st.color}">${c.status}</span>
@@ -663,11 +684,12 @@ function renderMgrDet(c) {
     ${c.studentEmail?`<div class="ibox" style="margin-bottom:6px"><div class="ilbl">メールアドレス</div><div class="ival" style="font-size:13px">${c.studentEmail}</div></div>`:''}
     ${c.studentTel?`<div class="ibox" style="margin-bottom:6px"><div class="ilbl">電話番号</div><div class="ival" style="font-size:13px">${c.studentTel}</div></div>`:''}
     ${c.studentAddr?`<div class="ibox" style="margin-bottom:6px"><div class="ilbl">住所</div><div class="ival" style="font-size:13px">${c.studentAddr}</div></div>`:''}`;
-  if (c.estimate) {
+  if (c.quoteSample || c.quoteHon) {
     html += `<div class="agrid">
-      <div class="abox"><div class="ilbl">見積（税抜）</div><div class="ival">¥${(c.estimate||0).toLocaleString()}</div></div>
-      <div class="abox" style="background:#f0fdf4"><div class="ilbl">請求金額</div><div class="ival" style="color:var(--green)">¥${(c.finalAmount||0).toLocaleString()}</div></div>
-      <div class="abox" style="background:#fef3c7"><div class="ilbl">手数料</div><div class="ival" style="color:var(--gold)">¥${(c.markup||0).toLocaleString()}</div></div>
+      ${c.quoteSample ? `<div class="abox" style="background:#faf5ff"><div class="ilbl">版代工場見積</div><div class="ival" style="color:#7c3aed">¥${(c.quoteSample||0).toLocaleString()}</div></div>` : ''}
+      ${c.quoteSample ? `<div class="abox" style="background:#ede9fe"><div class="ilbl">版代Lavique価格</div><div class="ival" style="color:#7c3aed">¥${Math.round((c.quoteSample||0)*1.1).toLocaleString()}</div></div>` : ''}
+      ${c.quoteHon ? `<div class="abox" style="background:#eff6ff"><div class="ilbl">本刷工場見積</div><div class="ival" style="color:#1d4ed8">¥${(c.quoteHon||0).toLocaleString()}</div></div>` : ''}
+      ${c.quoteHon ? `<div class="abox" style="background:#dbeafe"><div class="ilbl">本刷Lavique価格</div><div class="ival" style="color:#1d4ed8">¥${Math.round((c.quoteHon||0)*1.1).toLocaleString()}</div></div>` : ''}
     </div>`;
   }
   if (c.note) html += `<div style="font-size:12px;color:var(--ink-light);padding:6px 8px;background:#f9f8ff;border-radius:8px;margin-bottom:10px;line-height:1.8">${linkify(c.note)}</div>`;
@@ -727,12 +749,65 @@ function renderAdv(c, id) {
   });
   html += `</div>`;
   if (next) html += `<button onclick="advSt('${next}')" style="padding:8px 16px;background:var(--green);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:8px">→ ${next} に進める</button>`;
-  html += `<div style="font-size:12px;font-weight:700;color:var(--ink-mid);margin-bottom:6px">💰 お見積入力（税抜）</div>
-    <div class="est-row">
-      <input class="est-inp" id="estVal" type="number" placeholder="見積金額" value="${c.estimate||''}">
-      <span style="font-size:12px;color:var(--ink-light)">× マークアップ</span>
-      <input class="est-inp" id="mkpVal" type="number" placeholder="手数料%" value="${c.markup||''}">
-      <button class="est-btn" onclick="inputEst()">確定</button>
+  // 版代見積 Lavique価格計算
+  const smpLavique = c.quoteSample ? Math.round(c.quoteSample * 1.1) : '';
+  const honLavique = c.quoteHon    ? Math.round(c.quoteHon    * 1.1) : '';
+
+  html += `
+    <div style="font-size:12px;font-weight:700;color:var(--ink-mid);margin-bottom:8px">📅 日付・見積管理</div>
+
+    <div style="background:#faf5ff;border:1.5px solid #e9d5ff;border-radius:12px;padding:12px 14px;margin-bottom:8px">
+      <div style="font-size:11px;font-weight:700;color:#7c3aed;margin-bottom:8px">🎨 版代（サンプル）</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <div class="date-inp-box">
+          <div class="date-inp-lbl">版代見積日</div>
+          <input class="date-inp" type="date" id="d_dateSampleEst" value="${c.dateSampleEst||''}" onchange="saveDate('dateSampleEst',this.value)">
+        </div>
+        <div class="date-inp-box">
+          <div class="date-inp-lbl">版代入金日</div>
+          <input class="date-inp" type="date" id="d_dateSamplePaid" value="${c.dateSamplePaid||''}" onchange="saveDate('dateSamplePaid',this.value)">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:end">
+        <div class="date-inp-box">
+          <div class="date-inp-lbl">工場見積金額（税抜）</div>
+          <div style="display:flex;gap:4px;align-items:center">
+            <input class="date-inp" type="number" id="q_sample" placeholder="例：5000" value="${c.quoteSample||''}" oninput="calcQuote('sample',this.value)" style="flex:1">
+            <span style="font-size:11px;color:var(--ink-light)">円</span>
+          </div>
+        </div>
+        <div class="date-inp-box" style="background:#ede9fe">
+          <div class="date-inp-lbl" style="color:#7c3aed">Lavique提示価格（+10%）</div>
+          <div id="lp_sample" style="font-size:16px;font-weight:900;color:#7c3aed">${smpLavique ? '¥' + smpLavique.toLocaleString() : '—'}</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:12px;padding:12px 14px;margin-bottom:8px">
+      <div style="font-size:11px;font-weight:700;color:#1d4ed8;margin-bottom:8px">🖨️ 本刷り</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <div class="date-inp-box">
+          <div class="date-inp-lbl">本刷り見積日</div>
+          <input class="date-inp" type="date" id="d_dateHonEst" value="${c.dateHonEst||''}" onchange="saveDate('dateHonEst',this.value)">
+        </div>
+        <div class="date-inp-box">
+          <div class="date-inp-lbl">本刷り入金日</div>
+          <input class="date-inp" type="date" id="d_dateHonPaid" value="${c.dateHonPaid||''}" onchange="saveDate('dateHonPaid',this.value)">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:end">
+        <div class="date-inp-box">
+          <div class="date-inp-lbl">工場見積金額（税抜）</div>
+          <div style="display:flex;gap:4px;align-items:center">
+            <input class="date-inp" type="number" id="q_hon" placeholder="例：30000" value="${c.quoteHon||''}" oninput="calcQuote('hon',this.value)" style="flex:1">
+            <span style="font-size:11px;color:var(--ink-light)">円</span>
+          </div>
+        </div>
+        <div class="date-inp-box" style="background:#dbeafe">
+          <div class="date-inp-lbl" style="color:#1d4ed8">Lavique提示価格（+10%）</div>
+          <div id="lp_hon" style="font-size:16px;font-weight:900;color:#1d4ed8">${honLavique ? '¥' + honLavique.toLocaleString() : '—'}</div>
+        </div>
+      </div>
     </div>`;
   document.getElementById(id).innerHTML = html;
 }
@@ -746,8 +821,40 @@ function notifyFactory() {
   sendNotification(fe, 'Lavique管理者', c.designName, c.studentName, '新規入稿がありました。ご確認をお願いします。');
   sendNotification(RIE_EMAIL, 'Lavique', c.designName, c.studentName, c.factory + 'に新規入稿通知を送りました。');
   const notifiedAt = today();
-  db.ref('cases/' + currentId).update({factoryNotified: true, factoryNotifiedAt: notifiedAt});
+  db.ref('cases/' + currentId).update({factoryNotified: true, factoryNotifiedAt: notifiedAt}).then(() => {
+    // 直接UIを更新
+    casesData[currentId] = Object.assign({}, casesData[currentId], {factoryNotified: true, factoryNotifiedAt: notifiedAt});
+    renderMgrDet(casesData[currentId]);
+  });
   alert(c.factory + 'に新規入稿の通知メールを送りました！');
+}
+
+function saveDate(field, value) {
+  if (!currentId) return;
+  const update = {};
+  update[field] = value;
+  db.ref('cases/' + currentId).update(update).then(() => {
+    if (casesData[currentId]) casesData[currentId][field] = value;
+  });
+}
+
+function calcQuote(type, raw) {
+  if (!currentId) return;
+  const val = parseInt(raw) || 0;
+  const lavique = val ? Math.round(val * 1.1) : null;
+  // Update display immediately
+  const dispEl = document.getElementById('lp_' + type);
+  if (dispEl) dispEl.textContent = lavique ? '¥' + lavique.toLocaleString() : '—';
+  // Debounce save
+  clearTimeout(window['qt_'+type]);
+  window['qt_'+type] = setTimeout(() => {
+    if (!currentId) return;
+    const field = type === 'sample' ? 'quoteSample' : 'quoteHon';
+    const update = {}; update[field] = val || null;
+    db.ref('cases/' + currentId).update(update).then(() => {
+      if (casesData[currentId]) casesData[currentId][field] = val || null;
+    });
+  }, 800);
 }
 
 function advSt(to) { if(currentId) db.ref('cases/'+currentId).update({status:to, statusDate:today()}); }
@@ -836,7 +943,7 @@ function renderPendingCard(mid, m) {
 
 function renderBubble(m, view) {
   const isMe = (view==='mgr' && (m.sender==='admin'||m.sender==='goto')) ||
-               (view==='fct' && isFactory()) ||
+               (view==='fct' && (m.sender==='factory_ena'||m.sender==='factory_shouwa')) ||
                (view==='stu' && m.sender==='student');
   // For factory/student: show original sender label
   const label = m.senderLabel || m.sender;
