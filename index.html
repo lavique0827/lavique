@@ -196,6 +196,20 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--ink)
     </div>
     <div id="payDet" class="pay-det hidden"></div>
     <div class="filters" id="mgrFilters"></div>
+    <div id="csvPanel" style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:12px;padding:12px 14px;margin:8px 0">
+      <div style="font-size:12px;font-weight:700;color:#166534;margin-bottom:8px">📊 CSV出力（見積日ベース）</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end">
+        <div>
+          <div style="font-size:10px;color:#166534;margin-bottom:3px">開始日</div>
+          <input type="date" id="csvFrom" style="width:100%;border:1.5px solid #bbf7d0;border-radius:8px;padding:6px 8px;font-size:13px;font-family:inherit;outline:none">
+        </div>
+        <div>
+          <div style="font-size:10px;color:#166534;margin-bottom:3px">終了日</div>
+          <input type="date" id="csvTo" style="width:100%;border:1.5px solid #bbf7d0;border-radius:8px;padding:6px 8px;font-size:13px;font-family:inherit;outline:none">
+        </div>
+        <button onclick="downloadCsv()" style="padding:7px 16px;background:#16a34a;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">⬇ DL</button>
+      </div>
+    </div>
     <div id="mgrCases"></div>
   </div>
   <div id="mgrDet" class="det-body hidden">
@@ -884,6 +898,62 @@ function notifyFactory() {
     renderMgrDet(casesData[currentId]);
   });
   alert(c.factory + 'に新規入稿の通知メールを送りました！');
+}
+
+function downloadCsv() {
+  const from = document.getElementById('csvFrom').value;
+  const to   = document.getElementById('csvTo').value;
+
+  const rows = [['生徒名', '転写紙タイトル', '工場', '入稿日',
+    '版代見積日', '版代工場見積', 'Lavique版代価格', '版代入金日',
+    '本刷り見積日', '本刷り工場見積', 'Lavique本刷り価格', '本刷り入金日',
+    'ステータス']];
+
+  Object.values(casesData).forEach(c => {
+    // Filter: at least one estimate date in range
+    const dates = [c.dateSampleEst, c.dateHonEst].filter(Boolean);
+    if (from || to) {
+      const inRange = dates.some(d => {
+        if (from && d < from) return false;
+        if (to   && d > to)   return false;
+        return true;
+      });
+      if (!inRange) return;
+    }
+
+    const smpLav = c.quoteSample ? Math.round(c.quoteSample * 1.1) : '';
+    const honLav = c.quoteHon    ? Math.round(c.quoteHon    * 1.1) : '';
+    const entryDate = c.createdAt ? new Date(c.createdAt).toLocaleDateString('ja-JP') : '';
+
+    rows.push([
+      c.studentName  || '',
+      c.designName   || '',
+      c.factory      || '',
+      entryDate,
+      c.dateSampleEst  || '',
+      c.quoteSample    || '',
+      smpLav,
+      c.dateSamplePaid || '',
+      c.dateHonEst     || '',
+      c.quoteHon       || '',
+      honLav,
+      c.dateHonPaid    || '',
+      c.status         || '',
+    ]);
+  });
+
+  if (rows.length <= 1) { alert('該当データがありません'); return; }
+
+  // BOM + CSV for Japanese Excel
+  const bom = '\uFEFF';
+  const csv = bom + rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  const label = (from||'start') + '_' + (to||'end');
+  a.href = url; a.download = 'lavique_' + label + '.csv';
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
 }
 
 function saveDate(field, value) {
