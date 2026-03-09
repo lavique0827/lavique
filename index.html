@@ -816,6 +816,8 @@ function getCarryover(sellerId, currentMonthId) {
 }
 
 
+// ===== Settlement =====
+function renderStlPanel() {
   const sel=document.getElementById('stl-month');
   const cur=sel.value;
   sel.innerHTML='<option value="">— 月を選択 —</option>'+S.records.map(m=>`<option value="${m.id}">${m.label}</option>`).join('');
