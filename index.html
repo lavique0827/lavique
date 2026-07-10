@@ -3,1637 +3,1141 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Lavique 転写紙管理</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=DM+Serif+Display&display=swap" rel="stylesheet">
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+<title>個別相談参加者管理</title>
 <style>
-:root{
-  --pink:#c9768a;--pink-l:#ffc0cb;--pink-bg:#fff0f3;
-  --ink:#1a1625;--ink-mid:#3d3650;--ink-light:#7c7490;
-  --border:#e8e3f5;--bg:#f7f5ff;
-  --red:#dc2626;--green:#059669;--gold:#d97706;--blue:#3b82f6;
-  --shadow:0 2px 16px rgba(50,40,90,0.10);
-}
-*{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;}
-.hidden{display:none!important;}
-
-/* ── LOGIN ── */
-.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(145deg,#1a1625,#c9768a);padding:24px;}
-.login-box{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);backdrop-filter:blur(20px);border-radius:24px;padding:36px 28px;width:100%;max-width:380px;}
-.login-title{font-family:'DM Serif Display',serif;font-size:28px;color:#fff;text-align:center;margin-bottom:4px;}
-.login-sub{font-size:11px;color:#a5b4fc;letter-spacing:.15em;text-align:center;margin-bottom:28px;}
-.role-btn{width:100%;padding:13px 16px;border-radius:12px;border:1.5px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.08);color:#fff;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px;display:flex;align-items:center;gap:12px;transition:all .2s;}
-.role-btn:hover{background:rgba(255,255,255,0.16);}
-.role-icon{font-size:20px;}
-.role-desc{font-size:11px;opacity:.6;font-weight:400;margin-top:1px;}
-
-/* ── OVERLAY / MODAL ── */
-.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;z-index:300;padding:20px;}
-.modal{background:#fff;border-radius:16px;padding:24px;width:100%;max-width:340px;}
-.mbot{background:#fff;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;position:fixed;bottom:0;left:50%;transform:translateX(-50%);}
-
-/* ── COMMON ── */
-.inp{width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;margin-bottom:10px;outline:none;transition:border-color .15s;}
-.inp:focus{border-color:var(--pink);}
-.btn{width:100%;padding:11px;border:none;border-radius:10px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;margin-bottom:8px;}
-.btn-p{background:var(--pink);color:#fff;}
-.btn-g{background:#f3f4f6;color:var(--ink-mid);border:1.5px solid var(--border);}
-.err{color:var(--red);font-size:12px;margin-bottom:8px;text-align:center;}
-.flabel{font-size:12px;font-weight:700;color:var(--ink-mid);margin-bottom:4px;display:block;}
-
-/* ── APP ── */
-.app{display:none;min-height:100vh;flex-direction:column;}
-.app.active{display:flex;}
-.hdr{padding:14px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
-.ha{background:linear-gradient(135deg,#c9768a,#e8a0ad);}
-.hf{background:linear-gradient(135deg,#7c2d12,#c2410c);}
-.hs{background:linear-gradient(135deg,#0f172a,#334155);}
-.hl-{display:flex;align-items:center;gap:10px;}
-.hr-{display:flex;gap:8px;align-items:center;}
-.logo{font-family:'DM Serif Display',serif;font-size:20px;color:#fff;}
-.rtag{background:rgba(255,255,255,0.2);color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;}
-.lbtn{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;}
-.fab{background:linear-gradient(135deg,#e8a0ad,#c9768a);border:none;color:#fff;width:48px;height:48px;border-radius:50%;font-size:24px;cursor:pointer;box-shadow:0 4px 16px rgba(201,118,138,.4);display:flex;align-items:center;justify-content:center;position:fixed;bottom:20px;right:20px;z-index:50;}
-
-/* ── LIST ── */
-.list-body{flex:1;overflow-y:auto;padding:16px;}
-.stats-row{display:flex;gap:8px;overflow-x:auto;margin-bottom:12px;}
-.stat{background:#fff;border-radius:12px;padding:12px 16px;min-width:72px;text-align:center;box-shadow:var(--shadow);}
-.stat-n{font-size:22px;font-weight:900;}
-.stat-l{font-size:10px;color:var(--ink-light);margin-top:2px;}
-.pay-bar{background:#fef3c7;border:1.5px solid #fcd34d;border-radius:14px;padding:12px 16px;margin-bottom:12px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;}
-.pay-det{background:#fff;border:1px solid var(--border);border-radius:12px;margin-bottom:12px;overflow:hidden;}
-.prow{display:flex;justify-content:space-between;padding:9px 16px;border-bottom:1px solid var(--border);font-size:13px;}
-.ptot{background:#fef3c7;padding:12px 16px;display:flex;justify-content:space-between;}
-.filters{display:flex;gap:6px;overflow-x:auto;margin-bottom:12px;padding-bottom:4px;}
-.fil{background:#fff;border:1.5px solid var(--border);border-radius:99px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit;}
-.fil.on{background:var(--pink);color:#fff;border-color:var(--pink);}
-.ccard{background:#fff;border-radius:14px;padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow);cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;}
-.ccard:hover{box-shadow:0 4px 20px rgba(201,118,138,.2);}
-.ctitle{font-size:14px;font-weight:800;}
-.csub{font-size:12px;color:var(--ink-light);margin-top:2px;}
-.cright{display:flex;align-items:center;gap:8px;flex-shrink:0;}
-.cfct{font-size:11px;color:var(--ink-light);}
-.cbadge{padding:4px 10px;border-radius:99px;font-size:11px;font-weight:700;border:1.5px solid;}
-.cdot{width:8px;height:8px;border-radius:50%;background:#e2e8f0;flex-shrink:0;}
-.cdot.unread{background:var(--pink);}
-
-/* ── DETAIL ── */
-.det-body{flex:1;display:flex;flex-direction:column;overflow:hidden;}
-.back-bar{padding:12px 16px;background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
-.back-btn{background:none;border:none;font-size:14px;font-weight:700;color:var(--pink);cursor:pointer;font-family:inherit;padding:0;}
-.det-info{padding:14px 16px;background:#fff;border-bottom:1px solid var(--border);}
-.igrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
-.ibox{background:#f9f8ff;border-radius:10px;padding:10px 12px;}
-.ilbl{font-size:10px;color:var(--ink-light);margin-bottom:3px;}
-.ival{font-size:14px;font-weight:700;}
-.agrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px;}
-.abox{background:#f9f8ff;border-radius:10px;padding:10px 12px;}
-
-/* ── FLOW ── */
-.sflow{display:flex;gap:4px;overflow-x:auto;padding:10px 16px;background:#fff;border-bottom:1px solid var(--border);}
-.step{padding:5px 10px;border-radius:99px;font-size:11px;font-weight:700;border:1.5px solid;white-space:nowrap;cursor:pointer;}
-
-/* ── MESSAGES ── */
-.msgs{flex:1;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:10px;}
-
-/* pending message card (admin only) */
-.pending-card{background:#fffbeb;border:2px solid #fcd34d;border-radius:14px;padding:12px 14px;margin-bottom:4px;}
-.pending-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
-.pending-tag{background:#f59e0b;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;}
-.pending-from{font-size:12px;color:var(--ink-light);}
-.pending-body{font-size:13px;line-height:1.5;margin-bottom:10px;}
-.pending-img{max-width:180px;border-radius:8px;margin-bottom:10px;display:block;}
-.pending-edit{width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;margin-bottom:8px;outline:none;resize:none;}
-.pending-edit:focus{border-color:var(--pink);}
-.fwd-row{display:flex;gap:8px;}
-.fwd-btn{flex:1;padding:8px;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;}
-.fwd-to-stu{background:#dbeafe;color:#1d4ed8;}
-.fwd-to-fct{background:#dcfce7;color:#166534;}
-.del-msg-btn{padding:8px 12px;border:1.5px solid #fca5a5;background:#fff0f0;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;color:var(--red);font-family:inherit;}
-
-/* forwarded / normal message bubble */
-.mwrap{display:flex;flex-direction:column;max-width:82%;}
-.mwrap.me{align-self:flex-end;align-items:flex-end;}
-.mwrap.them{align-self:flex-start;}
-.mlbl{font-size:10px;color:var(--ink-light);margin-bottom:3px;}
-.mbubble{padding:10px 13px;border-radius:14px;font-size:13px;line-height:1.5;}
-.mbubble.me{background:var(--pink);color:#fff;border-radius:14px 14px 4px 14px;}
-.mbubble.them{background:#fff;border-radius:14px 14px 14px 4px;box-shadow:var(--shadow);}
-.mtime{font-size:10px;color:var(--ink-light);margin-top:3px;}
-.mimg{max-width:200px;border-radius:10px;cursor:pointer;}
-
-/* ── INPUT AREA ── */
-.adva{padding:10px 16px;background:#fff;border-top:1px solid var(--border);}
-.est-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
-.est-inp{width:120px;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;outline:none;}
-.est-inp:focus{border-color:var(--pink);}
-.est-btn{padding:8px 16px;background:var(--pink);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;}
-.mia{padding:12px 16px;background:#fff;border-top:1px solid var(--border);}
-.mrow{display:flex;gap:8px;align-items:flex-end;margin-bottom:8px;}
-.mta{flex:1;padding:10px 12px;border:1.5px solid var(--border);border-radius:12px;font-size:13px;font-family:inherit;resize:none;outline:none;}
-.mta:focus{border-color:var(--pink);}
-.sbtn{padding:10px 16px;background:var(--pink);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;}
-.file-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-.file-lbl{font-size:12px;color:var(--ink-light);}
-.notice{padding:10px 14px;border-radius:10px;font-size:12px;margin:8px 0;}
-.no{background:#fef2f2;color:#991b1b;}
-.del-btn{width:100%;padding:9px;background:#fff0f0;border:1.5px solid #fca5a5;border-radius:10px;color:var(--red);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:4px;}
-.url-area{background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:12px;margin-bottom:10px;}
-.url-text{font-size:12px;word-break:break-all;color:#065f46;margin-bottom:8px;}
-.date-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;}
-.date-box{background:#f9f8ff;border-radius:10px;padding:8px 10px;}
-.date-lbl{font-size:10px;color:var(--ink-light);margin-bottom:4px;}
-.date-val{font-size:13px;font-weight:700;color:var(--ink);}
-.date-inp-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
-.date-inp-box{background:#f9f8ff;border-radius:10px;padding:8px 10px;}
-.date-inp-lbl{font-size:10px;color:var(--ink-light);margin-bottom:4px;}
-.date-inp{width:100%;border:1.5px solid var(--border);border-radius:6px;padding:5px 8px;font-size:12px;font-family:inherit;outline:none;background:#fff;}
-.date-inp:focus{border-color:var(--pink);}
-.cpbtn{width:100%;padding:10px;background:var(--green);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;margin-bottom:8px;}
-#registerScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(145deg,#1a1625,#c9768a);padding:24px;}
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+    background: #f6f4ef;
+    color: #2c2c2a;
+    margin: 0;
+    padding: 0 0 4rem;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 1.5rem 1.25rem; }
+  h1 { font-size: 20px; font-weight: 600; margin: 0 0 .25rem; }
+  .sub { color: #6b6a64; font-size: 13px; margin: 0 0 1.5rem; }
+  .tabs { display: flex; gap: 6px; margin-bottom: 1.25rem; border-bottom: 1px solid #ddd9cf; }
+  .tab-btn {
+    padding: 10px 16px; border: none; background: none; cursor: pointer;
+    font-size: 14px; color: #6b6a64; border-bottom: 2px solid transparent; font-weight: 500;
+  }
+  .tab-btn.active { color: #2c2c2a; border-bottom-color: #993556; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .card {
+    background: #fff; border: 1px solid #e6e3da; border-radius: 12px;
+    padding: 1.25rem; margin-bottom: 1rem;
+  }
+  .card h2 { font-size: 15px; font-weight: 600; margin: 0 0 .75rem; }
+  textarea, input[type=text], input[type=file], select {
+    width: 100%; font-size: 14px; padding: 8px 10px; border: 1px solid #d8d5cb;
+    border-radius: 8px; font-family: inherit; background: #fdfcf9;
+  }
+  textarea { min-height: 110px; resize: vertical; }
+  button {
+    border: 1px solid #2c2c2a; background: #2c2c2a; color: #fff;
+    padding: 9px 18px; border-radius: 8px; font-size: 13px; cursor: pointer; font-weight: 500;
+  }
+  button.secondary { background: #fff; color: #2c2c2a; border-color: #d8d5cb; }
+  button:active { transform: scale(.98); }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: .6rem; }
+  .hint { font-size: 12px; color: #8a8880; margin-top: 6px; line-height: 1.6; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid #ede9df; vertical-align: top; }
+  th { color: #6b6a64; font-weight: 500; font-size: 12px; }
+  tr.clickable { cursor: pointer; }
+  tr.clickable:hover { background: #faf8f3; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+  .badge.ok { background: #e1f5ee; color: #04342c; }
+  .badge.no { background: #f1efe8; color: #5f5e5a; }
+  .badge.warn { background: #fff3cd; color: #7a4f00; }
+  .search { margin-bottom: .8rem; }
+  .detail {
+    display: none; background: #faf8f3; border: 1px solid #ede9df; border-radius: 10px;
+    padding: 1rem; margin-top: 6px;
+  }
+  .detail.open { display: block; }
+  .detail dt { font-size: 11px; color: #8a8880; margin-top: 8px; }
+  .detail dt:first-child { margin-top: 0; }
+  .detail dd { margin: 2px 0 0; font-size: 13px; white-space: pre-wrap; }
+  .visit-block { border: 1px solid #ede9df; border-radius: 10px; padding: .9rem; margin-bottom: .7rem; background: #faf8f3; }
+  .visit-block h4 { margin: 0 0 6px; font-size: 13px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+  .cal-head .month { font-size: 16px; font-weight: 600; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .cal-dow { text-align: center; font-size: 11px; color: #8a8880; padding: 4px 0; }
+  .cal-day {
+    aspect-ratio: 1; border: 1px solid #ede9df; border-radius: 8px; padding: 4px;
+    font-size: 12px; cursor: pointer; position: relative; background: #fff;
+    display: flex; flex-direction: column; align-items: flex-start;
+  }
+  .cal-day.empty { border: none; cursor: default; background: transparent; }
+  .cal-day:hover:not(.empty) { border-color: #d8d5cb; }
+  .cal-day.has-event { background: #fbeaf0; border-color: #ed93b1; }
+  .cal-day.selected { border-color: #993556; border-width: 2px; }
+  .cal-day .num { font-weight: 500; }
+  .cal-day .cnt { font-size: 10px; color: #993556; margin-top: auto; }
+  .day-list { margin-top: 0; max-height: 640px; overflow-y: auto; }
+  .cal-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; align-items: start; }
+  .cal-card, .day-list-card { margin-bottom: 0; }
+  @media (max-width: 860px) {
+    .cal-layout { grid-template-columns: 1fr; }
+  }
+  .slot { display: flex; gap: 12px; padding: 10px 4px; border-bottom: 1px solid #ede9df; align-items: flex-start; cursor: pointer; }
+  .slot:hover { background: #faf8f3; }
+  .slot .time { font-weight: 600; font-size: 13px; min-width: 56px; color: #993556; }
+  .slot .name { font-size: 14px; }
+  .empty-msg { color: #8a8880; font-size: 13px; padding: 1rem 0; }
+  .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: .8rem; flex-wrap: wrap; gap: 8px; }
+  .small { font-size: 12px; color: #8a8880; }
+  .status-msg { font-size: 12px; padding: 6px 10px; border-radius: 6px; margin-top: 8px; display: none; }
+  .status-msg.show { display: block; }
+  .status-msg.ok { background: #e1f5ee; color: #04342c; }
+  .status-msg.err { background: #fcebeb; color: #501313; }
+  .field-row { display: flex; gap: 8px; align-items: center; margin-top: 6px; }
+  .field-row label { font-size: 12px; color: #6b6a64; min-width: 110px; }
+  .person-card-link { color: #993556; cursor: pointer; text-decoration: underline; }
+  .close-x { float: right; cursor: pointer; color: #8a8880; font-size: 13px; }
 </style>
 </head>
 <body>
+<div class="wrap">
+  <h1>個別相談参加者管理</h1>
+  <p class="sub">健康ビジネス個別相談｜全員で同じデータを共有しています</p>
 
-<!-- LOGIN -->
-<div id="loginScreen" class="login-wrap">
-  <div class="login-box">
-    <div class="login-title">Lavique</div>
-    <div class="login-sub">転写紙 制作管理システム</div>
-    <button class="role-btn" onclick="showPW('admin')"><span class="role-icon">👑</span><div><div>管理者１</div><div class="role-desc">全案件・承認・転送</div></div></button>
-    <button class="role-btn" onclick="showPW('goto')"><span class="role-icon">🎨</span><div><div>管理者２</div><div class="role-desc">全案件・メッセージ確認</div></div></button>
-    <button class="role-btn" onclick="showPW('factory_ena')"><span class="role-icon">🏭</span><div><div>工場：恵那シルク</div><div class="role-desc">担当案件の確認・連絡</div></div></button>
-    <button class="role-btn" onclick="showPW('factory_shouwa')"><span class="role-icon">🏭</span><div><div>工場：昭和転写</div><div class="role-desc">担当案件の確認・連絡</div></div></button>
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="calendar">カレンダー</button>
+    <button class="tab-btn" data-tab="list">参加者管理</button>
+    <button class="tab-btn" data-tab="import">CSV取込</button>
   </div>
-</div>
 
-<!-- PW MODAL -->
-<div id="pwModal" class="overlay hidden">
-  <div class="modal">
-    <div style="font-size:15px;font-weight:800;margin-bottom:14px" id="pwTitle">パスワード</div>
-    <input id="pwInput" class="inp" type="password" placeholder="パスワードを入力" onkeydown="if(event.key==='Enter')checkPW()">
-    <div id="pwErr" class="err hidden">パスワードが違います</div>
-    <button class="btn btn-p" onclick="checkPW()" style="margin-top:4px">ログイン</button>
-    <button class="btn btn-g" onclick="closePW()">キャンセル</button>
-  </div>
-</div>
-
-<!-- MANAGER APP -->
-<div id="managerApp" class="app" style="display:none">
-  <div class="hdr ha">
-    <div class="hl-"><span class="logo">Lavique</span><span id="mgrTag" class="rtag">管理者</span></div>
-    <div class="hr-"><button class="lbtn" onclick="goHome()">🏠 ホーム</button><button class="lbtn" onclick="logout()">ログアウト</button></div>
-  </div>
-  <div id="mgrList" class="list-body">
-    <div class="stats-row" id="mgrStats"></div>
-    <div class="pay-bar" onclick="togglePay()">
-      <div><div style="font-size:13px;font-weight:700;color:#92400e">💰 月末工場支払い</div><div style="font-size:10px;color:#a16207">タップで詳細</div></div>
-      <div style="font-size:18px;font-weight:900;color:#92400e" id="payTotal">¥0</div>
-    </div>
-    <div id="payDet" class="pay-det hidden"></div>
-    <div class="filters" id="mgrFilters"></div>
-    <div id="csvPanel" style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:12px;padding:12px 14px;margin:8px 0">
-      <div style="font-size:12px;font-weight:700;color:#166534;margin-bottom:8px">📊 CSV出力（見積日ベース）</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end">
-        <div>
-          <div style="font-size:10px;color:#166534;margin-bottom:3px">開始日</div>
-          <input type="date" id="csvFrom" style="width:100%;border:1.5px solid #bbf7d0;border-radius:8px;padding:6px 8px;font-size:13px;font-family:inherit;outline:none">
+  <!-- カレンダータブ -->
+  <div class="panel active" id="panel-calendar">
+    <div class="cal-layout">
+      <div class="card cal-card">
+        <div class="cal-head">
+          <button class="secondary" id="prevMonth">← 前月</button>
+          <span class="month" id="calMonthLabel"></span>
+          <button class="secondary" id="nextMonth">次月 →</button>
         </div>
-        <div>
-          <div style="font-size:10px;color:#166534;margin-bottom:3px">終了日</div>
-          <input type="date" id="csvTo" style="width:100%;border:1.5px solid #bbf7d0;border-radius:8px;padding:6px 8px;font-size:13px;font-family:inherit;outline:none">
-        </div>
-        <button onclick="downloadCsv()" style="padding:7px 16px;background:#16a34a;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">⬇ DL</button>
+        <div class="cal-grid" id="calGrid"></div>
+      </div>
+      <div class="card day-list-card">
+        <div class="day-list" id="dayList"></div>
       </div>
     </div>
-    <div id="mgrCases"></div>
   </div>
-  <div id="mgrDet" class="det-body hidden">
-    <div class="back-bar">
-      <button class="back-btn" onclick="backToList('mgr')">← 案件一覧</button>
-    </div>
-    <div class="det-info" id="mgrInfo"></div>
-    <div class="sflow" id="mgrFlow"></div>
-    <div class="msgs" id="mgrMsgs"></div>
-    <div class="adva" id="mgrAdv"></div>
-    <div class="mia" id="mgrIn"></div>
-  </div>
-  <button class="fab hidden" id="fabBtn" onclick="openAdd()">＋</button>
-</div>
 
-<!-- FACTORY APP -->
-<div id="factoryApp" class="app" style="display:none">
-  <div class="hdr hf">
-    <div class="hl-"><span class="logo">Lavique</span><span id="fctTag" class="rtag">工場</span></div>
-    <div class="hr-"><button class="lbtn" onclick="goHome()">🏠 ホーム</button><button class="lbtn" onclick="logout()">ログアウト</button></div>
-  </div>
-  <div id="fctList" class="list-body">
-    <div class="filters" id="fctFilters"></div>
-    <div id="fctCases"></div>
-  </div>
-  <div id="fctDet" class="det-body hidden">
-    <div class="back-bar">
-      <button class="back-btn" onclick="backToList('fct')">← 案件一覧</button>
-    </div>
-    <div class="det-info" id="fctInfo"></div>
-    <div class="sflow" id="fctFlow"></div>
-    <div class="msgs" id="fctMsgs"></div>
-    <div class="mia" id="fctIn"></div>
-  </div>
-</div>
-
-<!-- REGISTRATION FORM -->
-<div id="registerScreen" class="login-wrap hidden">
-  <div style="background:#fff;border-radius:24px;padding:32px 24px;width:100%;max-width:440px;max-height:90vh;overflow-y:auto">
-    <div style="font-family:'DM Serif Display',serif;font-size:22px;color:var(--pink);text-align:center;margin-bottom:4px">Lavique</div>
-    <div style="font-size:12px;color:var(--ink-light);text-align:center;margin-bottom:24px">転写紙 制作お申込みフォーム</div>
-    <div id="regForm">
-      <label class="flabel">メールアドレス *</label>
-      <input id="rf_email" class="inp" type="email" placeholder="例：hanako@gmail.com">
-      <label class="flabel">【講座生名】本名で記入 *</label>
-      <input id="rf_name" class="inp" placeholder="例：山田 花子">
-      <label class="flabel">【住所】郵便番号から *</label>
-      <input id="rf_addr" class="inp" placeholder="例：〒530-0001 大阪府大阪市...">
-      <label class="flabel">【電話番号】 *</label>
-      <input id="rf_tel" class="inp" type="tel" placeholder="例：090-1234-5678">
-      <label class="flabel">【入稿先工場】 *</label>
-      <select id="rf_factory" class="inp">
-        <option value="">選択してください</option>
-        <option value="恵那シルク">恵那シルク</option>
-        <option value="昭和転写">昭和転写</option>
-      </select>
-      <label class="flabel">【転写紙タイトル】工場入稿する際の総称 *</label>
-      <input id="rf_design" class="inp" placeholder="例：Loveモンスター">
-      <label class="flabel">【入稿形式】推奨：AI *</label>
-      <select id="rf_format" class="inp">
-        <option>AI</option>
-        <option>PDF</option>
-      </select>
-      <label class="flabel">【データ】配置見本＋素材をUPしたGIGAファイルURLを記載 *</label>
-      <input id="rf_data" class="inp" placeholder="例：https://gigafile.nu/...">
-      <label class="flabel">【サイズ】推奨：A4二面付けでA3 *</label>
-      <select id="rf_size" class="inp">
-        <option>A4の2面付けA3</option>
-        <option>A4</option>
-        <option>A3</option>
-      </select>
-      <label class="flabel">【両面の柄】 *</label>
-      <select id="rf_pattern" class="inp">
-        <option>同柄</option>
-        <option>別柄</option>
-      </select>
-      <label class="flabel">【希望枚数】 *</label>
-      <select id="rf_qty" class="inp">
-        <option>30</option>
-        <option>50</option>
-        <option>70</option>
-        <option>100</option>
-        <option>sampleのみ</option>
-      </select>
-      <label class="flabel">【合紙】 *</label>
-      <select id="rf_paper" class="inp">
-        <option>あり</option>
-        <option>なし</option>
-      </select>
-      <label class="flabel">【納品時の裁断希望】 *</label>
-      <select id="rf_cut" class="inp">
-        <option>A3→A4カット希望</option>
-        <option>そのまま</option>
-      </select>
-      <label class="flabel">【サンプル希望】 *</label>
-      <select id="rf_sample" class="inp">
-        <option>サンプル希望</option>
-        <option>サンプル不要</option>
-      </select>
-      <label class="flabel">【見積もり返信期限】通常1週間目安</label>
-      <input id="rf_deadline" class="inp" type="date">
-      <label class="flabel">【備考・修正指示】色の調整希望、大きさのcm希望などあれば細かく指示</label>
-      <textarea id="rf_note" class="inp" rows="4" placeholder="ご質問やご要望があればご記入ください"></textarea>
-      <div id="regErr" class="err hidden">必須項目をすべて入力してください</div>
-      <button class="btn btn-p" onclick="submitRegister()" style="margin-top:8px">送信する</button>
-    </div>
-    <div id="regDone" class="hidden" style="text-align:center;padding:20px 0">
-      <div style="font-size:40px;margin-bottom:12px">✅</div>
-      <div style="font-size:16px;font-weight:800;margin-bottom:8px">お申込みありがとうございます</div>
-      <div style="font-size:13px;color:var(--ink-mid);margin-bottom:20px">以下のURLがあなた専用のページです。<br>ブックマークしてご利用ください。</div>
-      <div style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:12px;padding:16px;margin-bottom:16px">
-        <div id="regUrl" style="font-size:12px;color:#065f46;word-break:break-all;margin-bottom:10px"></div>
-        <button class="btn btn-p" onclick="copyRegUrl()" style="margin:0">📋 URLをコピー</button>
+  <!-- 参加者管理タブ -->
+  <div class="panel" id="panel-list">
+    <div class="card">
+      <div class="toolbar">
+        <select id="listChallengeSelect" style="max-width:220px"></select>
+        <select id="listDealFilter" style="max-width:140px">
+          <option value="">すべての成約状況</option>
+          <option value="yes">成約</option>
+          <option value="no">未成約</option>
+          <option value="hold">保留</option>
+          <option value="none">未記入</option>
+        </select>
+        <input type="text" id="searchBox" class="search" placeholder="名前で検索" style="max-width:200px">
+        <span class="small" id="listCount"></span>
+        <button class="secondary" id="exportCsvBtn" style="margin-left:auto">CSVで出力</button>
       </div>
-      <div style="font-size:11px;color:var(--ink-light)">このURLはあなただけのものです。大切に保管してください。</div>
+      <div id="listTableWrap"></div>
     </div>
   </div>
-</div>
 
-<!-- STUDENT APP -->
-<div id="studentApp" class="app" style="display:none">
-  <div class="hdr hs">
-    <div class="hl-"><span class="logo">Lavique</span><span class="rtag" id="stuName">生徒</span></div>
-    <div class="hr-"><button class="lbtn" onclick="window.scrollTo(0,0)">🏠 ホーム</button></div>
-  </div>
-  <div id="stuBody" class="det-body">
-    <div class="det-info" id="stuInfo"></div>
-    <div class="sflow" id="stuFlow"></div>
-    <div class="msgs" id="stuMsgs"></div>
-    <div class="mia" id="stuIn"></div>
-  </div>
-  <div id="stuNF" class="list-body hidden">
-    <div class="notice no" style="margin-top:40px">案件が見つかりません。URLをご確認ください。</div>
-  </div>
-</div>
+  <!-- CSV取込タブ -->
+  <div class="panel" id="panel-import">
+    <div class="card">
+      <h2>取込先のチャレンジを選択</h2>
+      <p class="hint">CSVを取り込む前に、どの「○月チャレンジ」のデータかを選んでください。既存のチャレンジを選べばそこに追加され、新規入力すれば新しいチャレンジとして作成されます。</p>
+      <select id="challengeSelect" style="margin-bottom:8px"></select>
+      <input type="text" id="challengeNewInput" placeholder="新しいチャレンジ名を入力（例：2026年7月チャレンジ）">
+      <p class="hint" id="challengeCurrentHint" style="margin-top:8px"></p>
+    </div>
+    <div class="card">
+      <h2>① 予約管理CSVを取込（日程・フリガナ・成約状況など）</h2>
+      <input type="file" id="csvFileReserve" accept=".csv">
+      <p class="hint">列名の例：お名前、フリガナ、日程（予約日時）、担当者、参加状況、成約状況、キャンセル理由 など。<br>
+      列名が一致していれば自動的に項目を認識します。文字化けする場合は自動でエンコーディングを判定します。<br>
+      「参加状況」列に「キャンセル」と書かれている行は自動的に取り込み対象から除外されます。<br>
+      同じ名前の人がすでに登録されている場合は、新しい来訪（回）として追加されます。</p>
+      <div class="row"><button id="importReserveBtn">予約管理CSVを取り込む</button></div>
+    </div>
+    <div class="card">
+      <h2>② 事前アンケートCSVを取込（同じ名前の方に自動で紐づけ）</h2>
+      <input type="file" id="csvFileSurvey" accept=".csv">
+      <p class="hint">列名の例：お名前、回答日時、その他アンケートの質問項目すべて。<br>
+      ①で登録済みの来訪のうち、回答日時に近いものへ自動で紐づけます（名前またはメールアドレスでマッチング）。<br>
+      ①未登録の名前のみ含まれていた場合は、新規の参加者として単独で登録します。</p>
+      <div class="row"><button id="importSurveyBtn">事前アンケートCSVを取り込む</button></div>
+    </div>
+    <div class="card">
+      <h2>CSVを貼り付けて取込</h2>
+      <select id="pasteTypeSelect" style="margin-bottom:8px">
+        <option value="reserve">予約管理データとして取込</option>
+        <option value="survey">事前アンケートデータとして取込</option>
+      </select>
+      <textarea id="csvPaste" placeholder="お名前,日程,フリガナ&#10;山田花子,2026/07/15(水) 13:00-14:00,ヤマダハナコ"></textarea>
+      <div class="row"><button id="importPasteBtn">貼り付け内容を取り込む</button></div>
+    </div>
+    <div id="importStatus" class="status-msg"></div>
 
-<!-- ADD MODAL -->
-<div id="addModal" class="overlay hidden">
-  <div class="mbot" onclick="event.stopPropagation()">
-    <div style="font-size:17px;font-weight:800;margin-bottom:18px">📋 新規案件登録</div>
-    <label class="flabel">生徒名 *</label>
-    <input id="fs" class="inp" placeholder="例：山田 花子">
-    <label class="flabel">生徒のメールアドレス</label>
-    <input id="fem" class="inp" type="email" placeholder="例：hanako@gmail.com">
-    <label class="flabel">転写紙名 *</label>
-    <input id="fn" class="inp" placeholder="例：花のワルツ">
-    <label class="flabel">仕様</label>
-    <select id="fsp" class="inp"><option>A4を2面付け</option><option>A3</option><option>その他</option></select>
-    <label class="flabel">担当工場</label>
-    <select id="ff" class="inp"><option value="">未定</option><option>恵那シルク</option><option>昭和転写</option></select>
-    <label class="flabel">備考</label>
-    <textarea id="fno" class="inp" rows="2" placeholder="メモがあれば"></textarea>
-    <div id="addErr" class="err hidden">生徒名と転写紙名は必須です</div>
-    <div id="urlArea" class="hidden">
-      <div class="url-area">
-        <div style="font-size:12px;color:#065f46;margin-bottom:6px">✅ 案件を作成しました！このURLを生徒に送ってください。</div>
-        <div id="urlBox" class="url-text"></div>
-        <button class="cpbtn" onclick="copyUrl()">📋 URLをコピー</button>
+    <div class="card">
+      <h2>データ管理</h2>
+      <div class="row">
+        <button class="secondary" id="exportJsonBtn">バックアップを書き出す（JSON）</button>
+        <button class="secondary" id="reloadBtn">最新データに再読込</button>
+        <button class="secondary" id="deleteAllBtn" style="color:#993556;border-color:#ed93b1">全データを削除</button>
       </div>
+      <p class="hint">このアプリのデータはクラウド上のデータベースに自動保存され、このURLを開いた人全員がリアルタイムで同じ内容を見られます。</p>
     </div>
-    <button id="saveBtn" class="btn btn-p" onclick="saveCase()">案件を作成 → URLを発行</button>
-    <button class="btn btn-g" onclick="closeAdd()">閉じる</button>
   </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
-// ═══════════════════════════════════════════
-// FIREBASE
-// ═══════════════════════════════════════════
-firebase.initializeApp({
-  apiKey:"AIzaSyDFL81Y_4EpqRSoJUvIg--lyQ0lC2rQAVc",
-  authDomain:"lavique-beb14.firebaseapp.com",
-  databaseURL:"https://lavique-beb14-default-rtdb.firebaseio.com",
-  projectId:"lavique-beb14",
-  storageBucket:"lavique-beb14.firebasestorage.app",
-  messagingSenderId:"481599803126",
-  appId:"1:481599803126:web:5908512bb54f1dbf5aa6d7"
-});
-const db = firebase.database();
+(function(){
+  var firebaseConfig = {
+    apiKey: "AIzaSyDfZ2SFmj2arUWoOFvw0jyn_1_ben-pfO0",
+    authDomain: "health-school-9d414.firebaseapp.com",
+    projectId: "health-school-9d414",
+    storageBucket: "health-school-9d414.firebasestorage.app",
+    messagingSenderId: "1090225614999",
+    appId: "1:1090225614999:web:2b087b4d5e0add606279d2"
+  };
+  firebase.initializeApp(firebaseConfig);
+  var db = firebase.firestore();
+  var docRef = db.collection('app').doc('participants');
 
-// ═══════════════════════════════════════════
-// CONSTANTS
-// ═══════════════════════════════════════════
-const PW = {admin:'rierier0922', goto:'lavique.ai', factory_ena:'ena.lavique', factory_shouwa:'shouwa.lavique'};
-const RIE_EMAIL     = 'homesalonstyle@gmail.com';
-const GOTO_EMAIL    = 'ito.goto.1126@gmail.com';
-const FACTORY_EMAILS = {'恵那シルク':'kakamu@ena-silk.com', '昭和転写':'rierier0922@yahoo.co.jp'};
-const CLOUD_NAME    = 'db5fgbtnn';
-const UPLOAD_PRESET = 'nsegom3j';
-const EJS_SERVICE   = 'service_vsfcefg';
-const EJS_TEMPLATE  = 'template_bmbb5pt';
-const APP_URL       = location.origin + location.pathname;
+  var participants = []; // {id, name, kana, email, visits:[{id, datetime, survey:{}, deal, amount, memo, challenge}]}
+  var challenges = []; // ["2026年2月チャレンジ", ...]
+  var isLoaded = false;
+  var saveQueued = false;
 
-emailjs.init('qynFxNvxQ0QvI8ih0');
+  function uid(){ return 'p_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8); }
+  function vuid(){ return 'v_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8); }
 
-// ═══════════════════════════════════════════
-// STATUS STEPS
-// ═══════════════════════════════════════════
-const ST = [
-  {key:'入稿受付',       color:'#94a3b8', next:'データ調整中'},
-  {key:'データ調整中',    color:'#f59e0b', next:'見積待ち'},
-  {key:'見積待ち',       color:'#3b82f6', next:'見積提示済み'},
-  {key:'見積提示済み',    color:'#8b5cf6', next:'サンプル費用入金'},
-  {key:'サンプル費用入金', color:'#06b6d4', next:'サンプル発注'},
-  {key:'サンプル発注',    color:'#ec4899', next:'サンプル確認中'},
-  {key:'サンプル確認中',  color:'#f97316', next:'本刷り見積待ち'},
-  {key:'本刷り見積待ち',  color:'#14b8a6', next:'本刷り発注'},
-  {key:'本刷り発注',     color:'#ea580c', next:'本刷り入金'},
-  {key:'本刷り入金',     color:'#c9768a', next:'納品完了'},
-  {key:'納品完了',       color:'#10b981', next:null},
-];
-
-// ═══════════════════════════════════════════
-// STATE
-// ═══════════════════════════════════════════
-let role = '', pendingRole = '';
-let casesData = {}, currentId = null;
-let msgOff = null, genUrl = '';
-let filterSt = 'all', payOpen = false;
-
-// ═══════════════════════════════════════════
-// HELPERS
-// ═══════════════════════════════════════════
-const ts     = () => Date.now();
-const today  = () => new Date().toLocaleDateString('ja-JP');
-const genKey = () => Math.random().toString(36).slice(2,10) + Math.random().toString(36).slice(2,10);
-const fmtTime = (t) => new Date(t).toLocaleString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
-const linkify = (text) => {
-  if (!text) return '';
-  return text.replace(/(https?:\/\/[^\s|]+)/g, '<a href="$1" target="_blank" style="color:var(--blue);text-decoration:underline;word-break:break-all">$1</a>');
-};
-const isAdmin = () => role === 'admin' || role === 'goto';
-const isFactory = () => role === 'factory_ena' || role === 'factory_shouwa';
-
-// ═══════════════════════════════════════════
-// EMAIL NOTIFICATIONS
-// ═══════════════════════════════════════════
-function sendNotification(toEmail, senderName, caseName, studentName, messageText) {
-  if (!toEmail) return;
-  emailjs.send(EJS_SERVICE, EJS_TEMPLATE, {
-    to_email: toEmail, name: senderName, sender_name: senderName,
-    case_name: caseName, student_name: studentName,
-    message: messageText || '（画像が送信されました）',
-    app_url: APP_URL, email: toEmail,
-  }).catch(e => console.log('EmailJS error:', e));
-}
-
-// Admin notified when factory/student sends (pending)
-// Factory/student notified when admin forwards to them
-function notifyPending(msg, c) {
-  // Notify admin that a new pending message arrived
-  const text = msg.text || '（画像）';
-  sendNotification(RIE_EMAIL,  msg.senderLabel, c.designName, c.studentName, text);
-  sendNotification(GOTO_EMAIL, msg.senderLabel, c.designName, c.studentName, text);
-}
-
-function notifyForwarded(msg, c) {
-  const text = msg.forwardedText || msg.text || '（画像）';
-  if (msg.forwardTo === 'student' && c.studentEmail) {
-    sendNotification(c.studentEmail, msg.senderLabel, c.designName, c.studentName, text);
-  } else if (msg.forwardTo === 'factory') {
-    const fe = FACTORY_EMAILS[c.factory] || '';
-    if (fe) sendNotification(fe, msg.senderLabel, c.designName, c.studentName, text);
+  function toKana(str){
+    // 簡易：ひらがな化できないので、入力名そのままを並び替えキーに使う（全角優先のローカライズはしない）
+    return (str || '').trim();
   }
-}
 
-// ═══════════════════════════════════════════
-// IMAGE UPLOAD
-// ═══════════════════════════════════════════
-async function uploadImage(file) {
-  const fd = new FormData();
-  fd.append('file', file);
-  fd.append('upload_preset', UPLOAD_PRESET);
-  fd.append('folder', 'lavique');
-  const res  = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {method:'POST', body:fd});
-  const data = await res.json();
-  return data.secure_url;
-}
-
-async function sendImage(inputId) {
-  const fileInput = document.getElementById(inputId + 'file');
-  if (!fileInput || !fileInput.files[0] || !currentId) return;
-  const file = fileInput.files[0];
-  const c    = casesData[currentId] || {};
-  const btn  = document.getElementById(inputId + 'imgbtn');
-  if (btn) { btn.textContent = '送信中...'; btn.disabled = true; }
-  try {
-    const url = await uploadImage(file);
-    submitMsg(inputId, '', url);
-    fileInput.value = '';
-    if (btn) { btn.textContent = '送信'; btn.disabled = false; }
-  } catch(e) {
-    alert('画像のアップロードに失敗しました。');
-    if (btn) { btn.textContent = '送信'; btn.disabled = false; }
+  function loadData(){
+    // 初回読込＋リアルタイム同期。他の人が更新した内容も自動で反映される
+    docRef.onSnapshot(function(doc){
+      // 自分がちょうど保存した直後の通知では再描画によるチラつきを避けるため、
+      // 保存キュー中でなければ常に最新を反映する
+      if (saveQueued) return;
+      if (doc.exists && doc.data() && doc.data().json) {
+        try {
+          var parsed = JSON.parse(doc.data().json);
+          participants = parsed.participants || [];
+          challenges = parsed.challenges || [];
+        } catch(e) {
+          participants = [];
+          challenges = [];
+        }
+      } else {
+        participants = [];
+        challenges = [];
+      }
+      // 既存データに challenges が無い場合の保険：来訪に書かれているchallenge名を拾い集める
+      ensureChallengesFromVisits();
+      // 旧データの互換処理：来訪のsurveyにアンケートが残っていればperson.surveyに移行
+      migrateSurveyToPersonLevel();
+      isLoaded = true;
+      renderAll();
+    }, function(err){
+      console.error('firestore load failed', err);
+      showStatus && showStatus('importStatus', 'データベースへの接続に失敗しました：' + err.message, false);
+    });
   }
-}
 
-// ═══════════════════════════════════════════
-// LOGIN
-// ═══════════════════════════════════════════
-function showPW(r) {
-  pendingRole = r;
-  const labels = {admin:'管理者１', goto:'管理者２', factory_ena:'工場：恵那シルク', factory_shouwa:'工場：昭和転写'};
-  document.getElementById('pwTitle').textContent = labels[r] + ' — パスワード';
-  document.getElementById('pwInput').value = '';
-  document.getElementById('pwErr').classList.add('hidden');
-  document.getElementById('pwModal').classList.remove('hidden');
-  setTimeout(() => document.getElementById('pwInput').focus(), 100);
-}
-function closePW() { document.getElementById('pwModal').classList.add('hidden'); }
-function checkPW() {
-  if (document.getElementById('pwInput').value === PW[pendingRole]) {
-    closePW(); doLogin(pendingRole);
-  } else {
-    document.getElementById('pwErr').classList.remove('hidden');
+  function ensureChallengesFromVisits(){
+    var set = {};
+    challenges.forEach(function(c){ set[c] = true; });
+    participants.forEach(function(p){
+      p.visits.forEach(function(v){
+        if (v.challenge) set[v.challenge] = true;
+      });
+    });
+    challenges = Object.keys(set);
   }
-}
 
-function showApp(appId) {
-  ['managerApp','factoryApp','studentApp'].forEach(id => {
-    const el = document.getElementById(id);
-    el.style.display = 'none';
-    el.classList.remove('active');
-  });
-  document.getElementById('loginScreen').style.display = 'none';
-  const app = document.getElementById(appId);
-  app.style.display = 'flex';
-  app.classList.add('active');
-}
-
-function doLogin(r) {
-  role = r;
-  if (isAdmin()) {
-    document.getElementById('mgrTag').textContent = r === 'admin' ? '管理者１' : '管理者２';
-    if (r === 'admin') document.getElementById('fabBtn').classList.remove('hidden');
-    else document.getElementById('fabBtn').classList.add('hidden');
-    showApp('managerApp');
-    casesData = {};
-    db.ref('cases').on('value', s => { casesData = s.val() || {}; renderMgrList(); });
-  } else {
-    const fName = r === 'factory_ena' ? '恵那シルク' : '昭和転写';
-    document.getElementById('fctTag').textContent = '工場：' + fName;
-    showApp('factoryApp');
-    casesData = {};
-    db.ref('cases').on('value', s => { casesData = s.val() || {}; renderFctList(); });
-  }
-}
-
-function logout() {
-  role = ''; casesData = {}; currentId = null;
-  if (msgOff) { msgOff(); msgOff = null; }
-  ['managerApp','factoryApp','studentApp'].forEach(id => {
-    const el = document.getElementById(id);
-    el.style.display = 'none';
-    el.classList.remove('active');
-  });
-  document.getElementById('loginScreen').style.display = 'flex';
-}
-
-// ═══════════════════════════════════════════
-// MANAGER LIST
-// ═══════════════════════════════════════════
-function renderMgrList() {
-  const cases = Object.entries(casesData);
-  const prog = cases.filter(([,c]) => !['納品完了','入金済'].includes(c.status)).length;
-  const hon  = cases.filter(([,c]) => ['本刷り発注','納品完了'].includes(c.status)).length;
-  const done = cases.filter(([,c]) => c.status === '入金済').length;
-  document.getElementById('mgrStats').innerHTML =
-    `<div class="stat"><div class="stat-n" style="color:var(--pink)">${prog}</div><div class="stat-l">進行中</div></div>
-     <div class="stat"><div class="stat-n" style="color:var(--gold)">${hon}</div><div class="stat-l">本刷り以降</div></div>
-     <div class="stat"><div class="stat-n" style="color:var(--green)">${done}</div><div class="stat-l">完了</div></div>
-     <div class="stat"><div class="stat-n" style="color:var(--ink-mid)">${cases.length}</div><div class="stat-l">総案件</div></div>`;
-
-  // 月別・工場別支払い集計（入金日基準）
-  const now = new Date();
-  const thisYear = now.getFullYear();
-  const thisMonth = now.getMonth(); // 0-indexed
-
-  // Collect all payment events per factory per month
-  // Key: "factory::YYYY-MM"
-  const payMap = {};
-  cases.forEach(([,c]) => {
-    if (!c.factory) return;
-    const addEntry = (dateStr, amount) => {
-      if (!dateStr || !amount) return;
-      const d = new Date(dateStr);
-      if (isNaN(d)) return;
-      const key = c.factory + '::' + d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
-      payMap[key] = (payMap[key] || 0) + amount;
-    };
-    if (c.dateSamplePaid && c.quoteSample) addEntry(c.dateSamplePaid, c.quoteSample);
-    if (c.dateHonPaid    && c.quoteHon)    addEntry(c.dateHonPaid,    c.quoteHon);
-  });
-
-  // Current month totals per factory
-  const curKey = (f) => f + '::' + thisYear + '-' + String(thisMonth+1).padStart(2,'0');
-  const factories = ['恵那シルク', '昭和転写'];
-  const curTotals = {};
-  factories.forEach(f => { curTotals[f] = payMap[curKey(f)] || 0; });
-  const grandTotal = Object.values(curTotals).reduce((a,b)=>a+b,0);
-
-  document.getElementById('payTotal').textContent = '¥' + grandTotal.toLocaleString();
-
-  // Build monthly breakdown
-  const allMonths = [...new Set(Object.keys(payMap).map(k=>k.split('::')[1]))].sort().reverse();
-  let detHtml = '';
-
-  // Current month section
-  detHtml += `<div style="font-size:11px;font-weight:700;color:#92400e;padding:6px 0 4px">📅 今月（${thisYear}年${thisMonth+1}月）</div>`;
-  factories.forEach(f => {
-    const amt = curTotals[f] || 0;
-    detHtml += `<div class="prow"><span style="display:flex;align-items:center;gap:4px"><span style="font-size:10px;background:#fef3c7;border-radius:3px;padding:1px 5px">${f}</span></span><span style="font-weight:700;color:${amt?'#92400e':'#ccc'}">¥${amt.toLocaleString()}</span></div>`;
-  });
-  detHtml += `<div class="ptot"><span>今月合計</span><span>¥${grandTotal.toLocaleString()}</span></div>`;
-
-  // Past months
-  const pastMonths = allMonths.filter(m => m !== thisYear+'-'+String(thisMonth+1).padStart(2,'0'));
-  if (pastMonths.length > 0) {
-    detHtml += `<div style="font-size:11px;font-weight:700;color:#6b7280;padding:10px 0 4px">📁 過去の月</div>`;
-    pastMonths.forEach(month => {
-      const [y,mo] = month.split('-');
-      let monthTotal = 0;
-      let rowsHtml = '';
-      factories.forEach(f => {
-        const amt = payMap[f+'::'+month] || 0;
-        if (amt) {
-          monthTotal += amt;
-          rowsHtml += `<div class="prow" style="font-size:12px"><span style="display:flex;align-items:center;gap:4px"><span style="font-size:10px;background:#f3f4f6;border-radius:3px;padding:1px 5px">${f}</span></span><span>¥${amt.toLocaleString()}</span></div>`;
+  // 旧データ互換：来訪のsurveyに残っているアンケートデータをperson.surveyに移行する
+  function migrateSurveyToPersonLevel(){
+    var needsSave = false;
+    participants.forEach(function(p){
+      if (p.survey && Object.keys(p.survey).length > 0) return; // すでにperson.surveyがあればスキップ
+      p.visits.forEach(function(v){
+        if (!v.survey) return;
+        var hasNonReserve = Object.keys(v.survey).some(function(k){
+          return !reserveCsvKeys.some(function(rk){ return k === rk; });
+        });
+        if (hasNonReserve) {
+          if (!p.survey) p.survey = {};
+          Object.keys(v.survey).forEach(function(k){
+            if (!reserveCsvKeys.some(function(rk){ return k === rk; })) {
+              p.survey[k] = v.survey[k];
+            }
+          });
+          needsSave = true;
         }
       });
-      detHtml += `<div style="font-size:11px;color:#6b7280;padding:4px 0 2px">${y}年${parseInt(mo)}月</div>`;
-      detHtml += rowsHtml;
-      detHtml += `<div class="ptot" style="font-size:12px"><span>小計</span><span>¥${monthTotal.toLocaleString()}</span></div>`;
     });
+    if (needsSave) saveData();
   }
 
-  document.getElementById('payDet').innerHTML = detHtml || '<div style="font-size:12px;color:#999;padding:8px">入金日が入力された案件がありません</div>';
-
-  const counts = {}; ST.forEach(s => { counts[s.key] = cases.filter(([,c])=>c.status===s.key).length; });
-  let fHtml = `<button class="fil ${filterSt==='all'?'on':''}" onclick="setFilter('all')">すべて ${cases.length}</button>`;
-  ST.forEach(s => { fHtml += `<button class="fil ${filterSt===s.key?'on':''}" onclick="setFilter('${s.key}')">${s.key} ${counts[s.key]}</button>`; });
-  document.getElementById('mgrFilters').innerHTML = fHtml;
-
-  const filtered = filterSt === 'all' ? cases : cases.filter(([,c])=>c.status===filterSt);
-  document.getElementById('mgrCases').innerHTML = filtered.length === 0
-    ? '<div class="notice" style="background:#f9f8ff;color:var(--ink-light);margin-top:20px">該当する案件はありません</div>'
-    : filtered.map(([id,c]) => {
-        const st = ST.find(s=>s.key===c.status)||ST[0];
-        const dateStr = c.createdAt ? new Date(c.createdAt).toLocaleDateString('ja-JP',{month:'numeric',day:'numeric'}) : c.statusDate||'';
-        const smpLav = c.quoteSample ? '¥'+(Math.round(c.quoteSample*1.1)).toLocaleString() : '';
-        const honLav = c.quoteHon    ? '¥'+(Math.round(c.quoteHon*1.1)).toLocaleString()    : '';
-        const dateTags = [
-          c.dateSampleEst  ? `<span style="font-size:10px;background:#ede9fe;color:#6d28d9;border-radius:4px;padding:1px 5px">版代見積 ${c.dateSampleEst}${smpLav?' '+smpLav:''}</span>` : '',
-          c.dateSamplePaid ? `<span style="font-size:10px;background:#dcfce7;color:#166534;border-radius:4px;padding:1px 5px">版代入金 ${c.dateSamplePaid}</span>` : '',
-          c.dateHonEst     ? `<span style="font-size:10px;background:#dbeafe;color:#1d4ed8;border-radius:4px;padding:1px 5px">本刷見積 ${c.dateHonEst}${honLav?' '+honLav:''}</span>` : '',
-          c.dateHonPaid    ? `<span style="font-size:10px;background:#fef3c7;color:#92400e;border-radius:4px;padding:1px 5px">本刷入金 ${c.dateHonPaid}</span>` : '',
-        ].filter(Boolean).join(' ');
-        return `<div class="ccard" onclick="openCase('${id}','mgr')">
-          <div class="cdot"></div>
-          <div style="flex:1;min-width:0">
-            <div class="ctitle">${c.studentName} <span style="font-size:11px;color:var(--ink-light);font-weight:400">入稿 ${dateStr}</span></div>
-            <div class="csub">${c.designName}</div>
-            ${dateTags ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px">${dateTags}</div>` : ''}
-          </div>
-          <div class="cright">
-            <span class="cfct">${c.factory||'未定'}</span>
-            <span class="cbadge" style="color:${st.color};border-color:${st.color}">${c.status}</span>
-          </div>
-        </div>`;
-      }).join('');
-}
-
-function togglePay() { payOpen=!payOpen; document.getElementById('payDet').classList.toggle('hidden',!payOpen); }
-function setFilter(s) { filterSt=s; isAdmin()?renderMgrList():renderFctList(); }
-
-// ═══════════════════════════════════════════
-// FACTORY LIST
-// ═══════════════════════════════════════════
-function renderFctList() {
-  const fName = role==='factory_ena'?'恵那シルク':'昭和転写';
-  const cases = Object.entries(casesData).filter(([,c])=>c.factory===fName);
-  const counts = {}; ST.forEach(s => { counts[s.key]=cases.filter(([,c])=>c.status===s.key).length; });
-  let fHtml = `<button class="fil ${filterSt==='all'?'on':''}" onclick="setFilter('all')">すべて ${cases.length}</button>`;
-  ST.forEach(s => { if(counts[s.key]>0) fHtml+=`<button class="fil ${filterSt===s.key?'on':''}" onclick="setFilter('${s.key}')">${s.key} ${counts[s.key]}</button>`; });
-  document.getElementById('fctFilters').innerHTML = fHtml;
-  const filtered = filterSt==='all'?cases:cases.filter(([,c])=>c.status===filterSt);
-  document.getElementById('fctCases').innerHTML = filtered.length===0
-    ? '<div class="notice" style="background:#f9f8ff;color:var(--ink-light);margin-top:20px">担当案件はありません</div>'
-    : filtered.map(([id,c])=>{
-        const st=ST.find(s=>s.key===c.status)||ST[0];
-        const dateStr2 = c.createdAt ? new Date(c.createdAt).toLocaleDateString('ja-JP',{month:'numeric',day:'numeric'}) : c.statusDate||'';
-        return `<div class="ccard" onclick="openCase('${id}','fct')">
-          <div class="cdot"></div>
-          <div style="flex:1;min-width:0"><div class="ctitle">${c.studentName} <span style="font-size:11px;color:var(--ink-light);font-weight:400">${dateStr2}</span></div><div class="csub">${c.designName}</div></div>
-          <div class="cright"><span class="cbadge" style="color:${st.color};border-color:${st.color}">${c.status}</span></div>
-        </div>`;
-      }).join('');
-}
-
-// ═══════════════════════════════════════════
-// OPEN / BACK
-// ═══════════════════════════════════════════
-function openCase(id, view) {
-  currentId = id;
-  const c = casesData[id];
-  if (view === 'mgr') {
-    document.getElementById('mgrList').classList.add('hidden');
-    document.getElementById('mgrDet').classList.remove('hidden');
-    renderMgrDet(c);
-    startMsgListen('mgr');
-    db.ref('cases/'+id).on('value', s => { if(s.val()){ casesData[id]=s.val(); renderMgrDet(s.val()); } });
-  } else {
-    document.getElementById('fctList').classList.add('hidden');
-    document.getElementById('fctDet').classList.remove('hidden');
-    renderFctDet(c);
-    startMsgListen('fct');
-    db.ref('cases/'+id).on('value', s => { if(s.val()){ casesData[id]=s.val(); renderFctDet(s.val()); } });
-  }
-}
-
-function backToList(view) {
-  currentId = null;
-  if (msgOff) { msgOff(); msgOff = null; }
-  if (view==='mgr') {
-    document.getElementById('mgrDet').classList.add('hidden');
-    document.getElementById('mgrList').classList.remove('hidden');
-  } else {
-    document.getElementById('fctDet').classList.add('hidden');
-    document.getElementById('fctList').classList.remove('hidden');
-  }
-}
-
-// ═══════════════════════════════════════════
-// MANAGER DETAIL
-// ═══════════════════════════════════════════
-function renderMgrDet(c) {
-  const stuUrl = c.studentKey ? `${location.origin}${location.pathname}?s=${c.studentKey}` : '';
-  let html = `<div style="font-size:16px;font-weight:800;margin-bottom:10px">${c.studentName} — ${c.designName}</div>
-    <div class="igrid">
-      <div class="ibox"><div class="ilbl">仕様</div><div class="ival">${c.spec||'—'}</div></div>
-      <div class="ibox"><div class="ilbl">工場</div><div class="ival">${c.factory||'未定'}</div></div>
-    </div>
-    ${c.studentEmail?`<div class="ibox" style="margin-bottom:6px"><div class="ilbl">メールアドレス</div><div class="ival" style="font-size:13px">${c.studentEmail}</div></div>`:''}
-    ${c.studentTel?`<div class="ibox" style="margin-bottom:6px"><div class="ilbl">電話番号</div><div class="ival" style="font-size:13px">${c.studentTel}</div></div>`:''}
-    ${c.studentAddr?`<div class="ibox" style="margin-bottom:6px"><div class="ilbl">住所</div><div class="ival" style="font-size:13px">${c.studentAddr}</div></div>`:''}`;
-  if (c.quoteSample || c.quoteHon) {
-    html += `<div class="agrid">
-      ${c.quoteSample ? `<div class="abox" style="background:#faf5ff"><div class="ilbl">版代工場見積</div><div class="ival" style="color:#7c3aed">¥${(c.quoteSample||0).toLocaleString()}</div></div>` : ''}
-      ${c.quoteSample ? `<div class="abox" style="background:#ede9fe"><div class="ilbl">版代Lavique価格</div><div class="ival" style="color:#7c3aed">¥${Math.round((c.quoteSample||0)*1.1).toLocaleString()}</div></div>` : ''}
-      ${c.quoteHon ? `<div class="abox" style="background:#eff6ff"><div class="ilbl">本刷工場見積</div><div class="ival" style="color:#1d4ed8">¥${(c.quoteHon||0).toLocaleString()}</div></div>` : ''}
-      ${c.quoteHon ? `<div class="abox" style="background:#dbeafe"><div class="ilbl">本刷Lavique価格</div><div class="ival" style="color:#1d4ed8">¥${Math.round((c.quoteHon||0)*1.1).toLocaleString()}</div></div>` : ''}
-    </div>`;
-  }
-  if (c.note) html += `<div style="font-size:12px;color:var(--ink-light);padding:6px 8px;background:#f9f8ff;border-radius:8px;margin-bottom:10px;line-height:1.8">${linkify(c.note)}</div>`;
-  if (stuUrl && role==='admin') {
-    html += `<div style="background:var(--pink-bg);border:1.5px solid var(--pink-l);border-radius:10px;padding:10px 12px;margin-bottom:10px">
-      <div style="font-size:10px;color:#9f4455;margin-bottom:4px">🔗 生徒用URL</div>
-      <div style="font-size:11px;color:#9f4455;word-break:break-all;margin-bottom:6px">${stuUrl}</div>
-      <button onclick="copyStudentUrl('${stuUrl}')" style="padding:5px 14px;background:var(--pink-l);border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">📋 URLをコピー</button>
-    </div>`;
-  }
-  if (role==='admin') {
-    if (c.factoryNotified) {
-      html += `<div style="width:100%;padding:9px;background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;color:var(--green);font-size:13px;font-weight:700;text-align:center;margin-bottom:6px">✅ 工場に通知済み（${c.factoryNotifiedAt||''}）</div>`;
-    } else {
-      html += `<button onclick="notifyFactory()" style="width:100%;padding:9px;background:#dbeafe;border:1.5px solid #93c5fd;border-radius:10px;color:#1d4ed8;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:6px">📨 新規入稿を工場に通知する</button>`;
+  async function saveData(){
+    saveQueued = true;
+    try {
+      ensureChallengesFromVisits();
+      await docRef.set({ json: JSON.stringify({ participants: participants, challenges: challenges }), updatedAt: Date.now() });
+    } catch(e) {
+      console.error('save failed', e);
+    } finally {
+      saveQueued = false;
     }
-    html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px">
-      <button onclick="openQuote('estimate')" style="padding:9px;background:#fdf4ff;border:1.5px solid #e9d5ff;border-radius:10px;color:#7c3aed;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">📄 見積書</button>
-      <button onclick="openQuote('receipt')" style="padding:9px;background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;color:#c2410c;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">🧾 領収書</button>
-    </div>`;
-    html += `<button class="del-btn" onclick="deleteCase()">🗑️ この案件を削除</button>`;
-  }
-  document.getElementById('mgrInfo').innerHTML = html;
-  document.getElementById('mgrFlow').innerHTML = ST.map(s=>{
-    const on=c.status===s.key;
-    return `<span class="step" style="background:${on?s.color:'transparent'};color:${on?'#fff':s.color};border-color:${s.color};opacity:${on?1:0.4}">${s.key}</span>`;
-  }).join('');
-  renderAdv(c, 'mgrAdv');
-  if (!document.getElementById('mgrmta')) renderInput('mgrIn');
-}
-
-// ═══════════════════════════════════════════
-// FACTORY DETAIL
-// ═══════════════════════════════════════════
-function renderFctDet(c) {
-  document.getElementById('fctInfo').innerHTML = `
-    <div style="font-size:16px;font-weight:800;margin-bottom:10px">${c.studentName} — ${c.designName}</div>
-    <div class="igrid">
-      <div class="ibox"><div class="ilbl">仕様</div><div class="ival">${c.spec||'—'}</div></div>
-      <div class="ibox"><div class="ilbl">ステータス</div><div class="ival">${c.status}</div></div>
-      ${c.studentTel  ? `<div class="ibox"><div class="ilbl">電話番号</div><div class="ival"><a href="tel:${c.studentTel}" style="color:var(--blue)">${c.studentTel}</a></div></div>` : ''}
-      ${c.studentAddr ? `<div class="ibox" style="grid-column:span 2"><div class="ilbl">住所</div><div class="ival">${c.studentAddr}</div></div>` : ''}
-    </div>
-    ${c.note?`<div style="font-size:12px;color:var(--ink-light);padding:6px 8px;background:#f9f8ff;border-radius:8px;line-height:1.8">${linkify(c.note)}</div>`:''}`;
-  document.getElementById('fctFlow').innerHTML = ST.map(s=>{
-    const on=c.status===s.key;
-    return `<span class="step" style="background:${on?s.color:'transparent'};color:${on?'#fff':s.color};border-color:${s.color};opacity:${on?1:0.4}">${s.key}</span>`;
-  }).join('');
-  if (!document.getElementById('fctmta')) renderInput('fctIn');
-}
-
-// ═══════════════════════════════════════════
-// ADVANCE STATUS / ESTIMATE
-// ═══════════════════════════════════════════
-function renderAdv(c, id) {
-  if (!isAdmin()) { document.getElementById(id).innerHTML=''; return; }
-  const st = ST.find(s=>s.key===c.status);
-  const next = st?st.next:null;
-  let html = `<div style="font-size:12px;font-weight:700;color:var(--ink-mid);margin-bottom:8px">📌 ステータス変更</div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">`;
-  ST.forEach(s => {
-    html += `<button class="step" onclick="advSt('${s.key}')" style="background:${c.status===s.key?s.color:'transparent'};color:${c.status===s.key?'#fff':s.color};border-color:${s.color};opacity:1;cursor:pointer">${s.key}</button>`;
-  });
-  html += `</div>`;
-  if (next) html += `<button onclick="advSt('${next}')" style="padding:8px 16px;background:var(--green);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:8px">→ ${next} に進める</button>`;
-  // 版代見積 Lavique価格計算
-  const smpLavique = c.quoteSample ? Math.round(c.quoteSample * 1.1) : '';
-  const honLavique = c.quoteHon    ? Math.round(c.quoteHon    * 1.1) : '';
-
-  html += `
-    <div style="font-size:12px;font-weight:700;color:var(--ink-mid);margin-bottom:8px">📅 日付・見積管理</div>
-
-    <div style="background:#faf5ff;border:1.5px solid #e9d5ff;border-radius:12px;padding:12px 14px;margin-bottom:8px">
-      <div style="font-size:11px;font-weight:700;color:#7c3aed;margin-bottom:8px">🎨 版代（サンプル）</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-        <div class="date-inp-box">
-          <div class="date-inp-lbl">版代見積日</div>
-          <input class="date-inp" type="date" id="d_dateSampleEst" value="${c.dateSampleEst||''}" onchange="saveDate('dateSampleEst',this.value)">
-        </div>
-        <div class="date-inp-box">
-          <div class="date-inp-lbl">版代入金日</div>
-          <input class="date-inp" type="date" id="d_dateSamplePaid" value="${c.dateSamplePaid||''}" onchange="saveDate('dateSamplePaid',this.value)">
-        </div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:end">
-        <div class="date-inp-box">
-          <div class="date-inp-lbl">工場見積金額（税抜）</div>
-          <div style="display:flex;gap:4px;align-items:center">
-            <input class="date-inp" type="number" id="q_sample" placeholder="例：5000" value="${c.quoteSample||''}" oninput="calcQuote('sample',this.value)" style="flex:1">
-            <span style="font-size:11px;color:var(--ink-light)">円</span>
-          </div>
-        </div>
-        <div class="date-inp-box" style="background:#ede9fe">
-          <div class="date-inp-lbl" style="color:#7c3aed">Lavique提示価格（+10%）</div>
-          <div id="lp_sample" style="font-size:16px;font-weight:900;color:#7c3aed">${smpLavique ? '¥' + smpLavique.toLocaleString() : '—'}</div>
-        </div>
-      </div>
-    </div>
-
-    <div style="background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:12px;padding:12px 14px;margin-bottom:8px">
-      <div style="font-size:11px;font-weight:700;color:#1d4ed8;margin-bottom:8px">🖨️ 本刷り</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-        <div class="date-inp-box">
-          <div class="date-inp-lbl">本刷り見積日</div>
-          <input class="date-inp" type="date" id="d_dateHonEst" value="${c.dateHonEst||''}" onchange="saveDate('dateHonEst',this.value)">
-        </div>
-        <div class="date-inp-box">
-          <div class="date-inp-lbl">本刷り入金日</div>
-          <input class="date-inp" type="date" id="d_dateHonPaid" value="${c.dateHonPaid||''}" onchange="saveDate('dateHonPaid',this.value)">
-        </div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:end">
-        <div class="date-inp-box">
-          <div class="date-inp-lbl">工場見積金額（税抜）</div>
-          <div style="display:flex;gap:4px;align-items:center">
-            <input class="date-inp" type="number" id="q_hon" placeholder="例：30000" value="${c.quoteHon||''}" oninput="calcQuote('hon',this.value)" style="flex:1">
-            <span style="font-size:11px;color:var(--ink-light)">円</span>
-          </div>
-        </div>
-        <div class="date-inp-box" style="background:#dbeafe">
-          <div class="date-inp-lbl" style="color:#1d4ed8">Lavique提示価格（+10%）</div>
-          <div id="lp_hon" style="font-size:16px;font-weight:900;color:#1d4ed8">${honLavique ? '¥' + honLavique.toLocaleString() : '—'}</div>
-        </div>
-      </div>
-    </div>`;
-  document.getElementById(id).innerHTML = html;
-}
-
-function notifyFactory() {
-  if (!currentId) return;
-  const c = casesData[currentId] || {};
-  if (!c.factory) { alert('担当工場が設定されていません。先に工場を設定してください。'); return; }
-  const fe = FACTORY_EMAILS[c.factory];
-  if (!fe) { alert('工場のメールアドレスが見つかりません。'); return; }
-  sendNotification(fe, 'Lavique管理者', c.designName, c.studentName, '新規入稿がありました。ご確認をお願いします。');
-  sendNotification(RIE_EMAIL, 'Lavique', c.designName, c.studentName, c.factory + 'に新規入稿通知を送りました。');
-  const notifiedAt = today();
-  db.ref('cases/' + currentId).update({factoryNotified: true, factoryNotifiedAt: notifiedAt}).then(() => {
-    // 直接UIを更新
-    casesData[currentId] = Object.assign({}, casesData[currentId], {factoryNotified: true, factoryNotifiedAt: notifiedAt});
-    renderMgrDet(casesData[currentId]);
-  });
-  alert(c.factory + 'に新規入稿の通知メールを送りました！');
-}
-
-function downloadCsv() {
-  const from = document.getElementById('csvFrom').value;
-  const to   = document.getElementById('csvTo').value;
-
-  const rows = [['生徒名', '転写紙タイトル', '工場', '入稿日',
-    '版代見積日', '版代工場見積', 'Lavique版代価格', '版代入金日',
-    '本刷り見積日', '本刷り工場見積', 'Lavique本刷り価格', '本刷り入金日',
-    'ステータス']];
-
-  Object.values(casesData).forEach(c => {
-    // Filter: at least one estimate date in range
-    const dates = [c.dateSampleEst, c.dateHonEst].filter(Boolean);
-    if (from || to) {
-      const inRange = dates.some(d => {
-        if (from && d < from) return false;
-        if (to   && d > to)   return false;
-        return true;
-      });
-      if (!inRange) return;
-    }
-
-    const smpLav = c.quoteSample ? Math.round(c.quoteSample * 1.1) : '';
-    const honLav = c.quoteHon    ? Math.round(c.quoteHon    * 1.1) : '';
-    const entryDate = c.createdAt ? new Date(c.createdAt).toLocaleDateString('ja-JP') : '';
-
-    rows.push([
-      c.studentName  || '',
-      c.designName   || '',
-      c.factory      || '',
-      entryDate,
-      c.dateSampleEst  || '',
-      c.quoteSample    || '',
-      smpLav,
-      c.dateSamplePaid || '',
-      c.dateHonEst     || '',
-      c.quoteHon       || '',
-      honLav,
-      c.dateHonPaid    || '',
-      c.status         || '',
-    ]);
-  });
-
-  if (rows.length <= 1) { alert('該当データがありません'); return; }
-
-  // BOM + CSV for Japanese Excel
-  const bom = '\uFEFF';
-  const csv = bom + rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
-  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  const label = (from||'start') + '_' + (to||'end');
-  a.href = url; a.download = 'lavique_' + label + '.csv';
-  document.body.appendChild(a); a.click();
-  document.body.removeChild(a); URL.revokeObjectURL(url);
-}
-
-function openQuote(type='estimate') {
-  if (!currentId) return;
-  const c = casesData[currentId] || {};
-  const _d = new Date();
-  const today_str = _d.getFullYear() + '年' + String(_d.getMonth()+1).padStart(2,'0') + '月' + String(_d.getDate()).padStart(2,'0') + '日';
-  // receipt number: YYYYMMDD-XXX
-  const receiptNo = new Date().toISOString().slice(0,10).replace(/-/g,'') + '-' + String(Math.floor(Math.random()*900)+100);
-
-  // Build items
-  const rows = [];
-  if (c.quoteSample) {
-    rows.push({ name: '版代　' + (c.designName||''), qty: '1 式', unit: c.quoteSample, amt: c.quoteSample });
-  }
-  if (c.quoteHon) {
-    rows.push({ name: '〃 荷口転写紙　' + (c.spec||''), qty: '—', unit: c.quoteHon, amt: c.quoteHon });
-  }
-  // If neither, show placeholder
-  if (!rows.length) {
-    rows.push({ name: '版代　' + (c.designName||''), qty: '1 式', unit: 0, amt: 0 });
   }
 
-  const subtotal = rows.reduce((s,r) => s + (r.amt||0), 0);
-  const lavSubtotal = Math.round(subtotal * 1.1); // +10% markup
-  const tax = Math.round(lavSubtotal * 0.1);
-  const total = lavSubtotal + tax;
-
-  const rowsHtml = rows.map(r => `
-    <tr>
-      <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb">${r.name}</td>
-      <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;text-align:center">${r.qty}</td>
-      <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;text-align:right">${r.unit ? r.unit.toLocaleString() : '—'}</td>
-      <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;text-align:right">${r.amt ? r.amt.toLocaleString() : '—'}</td>
-    </tr>`).join('');
-
-  // Blank filler rows
-  const blankRows = Array(Math.max(0, 7 - rows.length)).fill(
-    '<tr><td style="padding:10px 12px;border-bottom:1px solid #e5e7eb">&nbsp;</td><td style="border-bottom:1px solid #e5e7eb"></td><td style="border-bottom:1px solid #e5e7eb"></td><td style="border-bottom:1px solid #e5e7eb"></td></tr>'
-  ).join('');
-
-  document.getElementById('quotePaper').innerHTML = `
-    <div style="text-align:right;font-size:12px;color:#666;margin-bottom:4px">${today_str}</div>
-    <div style="text-align:right;font-size:12px;color:#666;margin-bottom:20px">請求番号: ${receiptNo}</div>
-    <div style="text-align:center;font-size:26px;font-weight:900;letter-spacing:6px;margin-bottom:28px">見 積 書</div>
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px">
-      <div>
-        <div style="font-size:18px;font-weight:800;border-bottom:2px solid #1a1a1a;padding-bottom:4px;margin-bottom:12px">${c.studentName||''}　様</div>
-        <div style="font-size:13px;margin-bottom:4px">件名 : ${c.studentName||''} ${c.designName||''}（${c.spec||''}）</div>
-        <div style="font-size:12px;color:#666;margin-bottom:16px">下記のとおりお見積申し上げます。</div>
-        <div style="font-size:13px;margin-bottom:4px;font-weight:700">お見積金額</div>
-        <div style="font-size:22px;font-weight:900">¥ ${total.toLocaleString()} -</div>
-      </div>
-      <div style="text-align:right">
-        <div style="font-size:15px;font-weight:800;margin-bottom:6px">Lavique Creative Decal Academy</div>
-        <div style="font-size:12px;color:#555;line-height:1.8">
-          〒7210973<br>
-          広島県福山市南蔵王町2丁目3-35<br>
-          後藤 あい<br>
-          TEL: 080-3894-4100<br>
-          pocha2_ageha@docomo.ne.jp
-        </div>
-      </div>
-    </div>
-    <table style="width:100%;border-collapse:collapse;margin-bottom:0">
-      <thead>
-        <tr style="background:#f3f4f6">
-          <th style="padding:10px 12px;text-align:left;border-bottom:2px solid #d1d5db;font-size:13px">品番・品名</th>
-          <th style="padding:10px 12px;text-align:center;border-bottom:2px solid #d1d5db;font-size:13px;width:80px">数量</th>
-          <th style="padding:10px 12px;text-align:right;border-bottom:2px solid #d1d5db;font-size:13px;width:90px">単価</th>
-          <th style="padding:10px 12px;text-align:right;border-bottom:2px solid #d1d5db;font-size:13px;width:90px">金額</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${rowsHtml}
-        ${blankRows}
-        <tr style="background:#f9fafb">
-          <td colspan="3" style="padding:10px 12px;text-align:right;font-size:13px;border-bottom:1px solid #e5e7eb">小計</td>
-          <td style="padding:10px 12px;text-align:right;font-size:13px;border-bottom:1px solid #e5e7eb">${lavSubtotal.toLocaleString()}</td>
-        </tr>
-        <tr style="background:#f9fafb">
-          <td colspan="3" style="padding:10px 12px;text-align:right;font-size:13px;border-bottom:1px solid #e5e7eb">消費税 (10%)</td>
-          <td style="padding:10px 12px;text-align:right;font-size:13px;border-bottom:1px solid #e5e7eb">${tax.toLocaleString()}</td>
-        </tr>
-        <tr style="background:#f3f4f6">
-          <td colspan="3" style="padding:10px 12px;text-align:right;font-weight:800;font-size:14px">合計</td>
-          <td style="padding:10px 12px;text-align:right;font-weight:900;font-size:14px">${total.toLocaleString()}</td>
-        </tr>
-      </tbody>
-    </table>
-    <div style="margin-top:28px;font-size:12px;color:#555;line-height:1.8">
-      <div style="font-weight:700">お振込先：</div>
-      住信SBIネット銀行　0038（バナナ支店）107-9212048　ゴトウ アイ
-    </div>
-  `;
-  // ── Receipt mode ──
-  if (type === 'receipt') {
-    const receiptTotal = total;
-    document.getElementById('quotePaper').innerHTML = `
-      <div style="text-align:right;font-size:12px;color:#666;margin-bottom:4px">${today_str}</div>
-      <div style="text-align:right;font-size:12px;color:#666;margin-bottom:20px">領収番号: ${receiptNo}</div>
-      <div style="text-align:center;font-size:26px;font-weight:900;letter-spacing:6px;margin-bottom:28px">領 収 書</div>
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px">
-        <div>
-          <div style="font-size:18px;font-weight:800;border-bottom:2px solid #1a1a1a;padding-bottom:4px;margin-bottom:16px">${c.studentName||''}　様</div>
-          <div style="font-size:13px;margin-bottom:12px">件名 : ${c.studentName||''} ${c.designName||''}（${c.spec||''}）</div>
-          <div style="font-size:13px;font-weight:700;margin-bottom:4px">領収金額</div>
-          <div style="font-size:32px;font-weight:900;letter-spacing:2px">¥ ${receiptTotal.toLocaleString()} -</div>
-          <div style="font-size:12px;color:#666;margin-top:8px">（内消費税10%：¥${tax.toLocaleString()}）</div>
-        </div>
-        <div style="text-align:right">
-          <div style="font-size:15px;font-weight:800;margin-bottom:6px">Lavique Creative Decal Academy</div>
-          <div style="font-size:12px;color:#555;line-height:1.8">
-            〒7210973<br>
-            広島県福山市南蔵王町2丁目3-35<br>
-            後藤 あい<br>
-            TEL: 080-3894-4100<br>
-            pocha2_ageha@docomo.ne.jp
-          </div>
-        </div>
-      </div>
-      <div style="border-top:2px solid #e5e7eb;padding-top:16px;font-size:13px;color:#555">
-        <div style="font-weight:700;margin-bottom:6px">内訳</div>
-        ${rows.map(r => `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f3f4f6">
-          <span>${r.name}</span><span>¥${r.amt ? Math.round(r.amt*1.1).toLocaleString() : '—'}</span>
-        </div>`).join('')}
-      </div>
-      <div style="margin-top:24px;font-size:12px;color:#888;text-align:center">
-        上記の金額を正に領収いたしました。
-      </div>
-    `;
+  function showStatus(elId, msg, ok){
+    var el = document.getElementById(elId);
+    el.textContent = msg;
+    el.className = 'status-msg show ' + (ok ? 'ok' : 'err');
+    setTimeout(function(){ el.className = 'status-msg'; }, 4000);
   }
 
-  document.getElementById('quoteModal').classList.remove('hidden');
-  document.getElementById('quoteModal').scrollTop = 0;
-}
-
-function saveDate(field, value) {
-  if (!currentId) return;
-  const update = {};
-  update[field] = value;
-  db.ref('cases/' + currentId).update(update).then(() => {
-    if (casesData[currentId]) casesData[currentId][field] = value;
-  });
-}
-
-function calcQuote(type, raw) {
-  if (!currentId) return;
-  const val = parseInt(raw) || 0;
-  const lavique = val ? Math.round(val * 1.1) : null;
-  // Update display immediately
-  const dispEl = document.getElementById('lp_' + type);
-  if (dispEl) dispEl.textContent = lavique ? '¥' + lavique.toLocaleString() : '—';
-  // Debounce save
-  clearTimeout(window['qt_'+type]);
-  window['qt_'+type] = setTimeout(() => {
-    if (!currentId) return;
-    const field = type === 'sample' ? 'quoteSample' : 'quoteHon';
-    const update = {}; update[field] = val || null;
-    db.ref('cases/' + currentId).update(update).then(() => {
-      if (casesData[currentId]) casesData[currentId][field] = val || null;
+  // ---------- タブ切り替え ----------
+  document.querySelectorAll('.tab-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
+      document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('active'); });
+      btn.classList.add('active');
+      document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+      if (btn.dataset.tab === 'calendar') renderCalendar();
     });
-  }, 800);
-}
+  });
 
-function advSt(to) { if(currentId) db.ref('cases/'+currentId).update({status:to, statusDate:today()}); }
-function inputEst() {
-  if (!currentId) return;
-  const est=parseInt(document.getElementById('estVal').value)||0;
-  const mkp=parseInt(document.getElementById('mkpVal').value)||0;
-  db.ref('cases/'+currentId).update({estimate:est, markup:mkp, finalAmount:Math.round(est*(1+mkp/100))});
-}
+  // ---------- CSV取込 共通処理 ----------
+  function normalizeKey(k){ return (k||'').trim(); }
 
-// ═══════════════════════════════════════════
-// MESSAGES — rendering
-// ═══════════════════════════════════════════
-function startMsgListen(view) {
-  if (msgOff) { msgOff(); msgOff = null; }
-  const ref = db.ref('messages/'+currentId);
-  const handler = ref.on('value', snap => renderMsgs(snap.val(), view));
-  msgOff = () => ref.off('value', handler);
-}
-
-function renderMsgs(msgs, view) {
-  const el = document.getElementById(view+'Msgs');
-  if (!msgs) {
-    el.innerHTML = '<div style="text-align:center;color:var(--ink-light);font-size:13px;padding:20px">まだメッセージはありません</div>';
-    return;
+  // 名前マッチング用：全角/半角スペース・前後空白を除去
+  function normName(s){
+    return (s||'').replace(/[\s\u3000]/g, '').trim();
   }
-  const sorted = Object.entries(msgs).sort(([,a],[,b])=>a.timestamp-b.timestamp);
 
-  if (view === 'mgr') {
-    // Admin sees ALL messages — pending as approval cards, forwarded as bubbles
-    el.innerHTML = sorted.map(([mid, m]) => {
-      if (m.status === 'pending') {
-        return renderPendingCard(mid, m);
-      } else {
-        return renderBubble(m, 'mgr');
+  function findCol(row, candidates){
+    var keys = Object.keys(row);
+    for (var i=0;i<candidates.length;i++){
+      for (var j=0;j<keys.length;j++){
+        if (keys[j].indexOf(candidates[i]) !== -1) return keys[j];
       }
-    }).join('');
-  } else if (view === 'fct') {
-    // Factory sees: ALL their own sent messages + messages forwarded to them or both
-    const visible = sorted.filter(([,m]) =>
-      (m.sender==='factory_ena' || m.sender==='factory_shouwa') ||
-      (m.status==='forwarded' && (m.forwardTo==='factory' || m.forwardTo==='both'))
-    );
-    el.innerHTML = visible.length===0
-      ? '<div style="text-align:center;color:var(--ink-light);font-size:13px;padding:20px">まだメッセージはありません</div>'
-      : visible.map(([,m]) => renderBubble(m,'fct')).join('');
-  } else if (view === 'stu') {
-    // Student sees: ALL their own sent messages + messages forwarded to them or both
-    const visible = sorted.filter(([,m]) =>
-      m.sender === 'student' ||
-      (m.status === 'forwarded' && (m.forwardTo === 'student' || m.forwardTo === 'both'))
-    );
-    el.innerHTML = visible.length===0
-      ? '<div style="text-align:center;color:var(--ink-light);font-size:13px;padding:20px">まだメッセージはありません</div>'
-      : visible.map(([,m]) => renderBubble(m,'stu')).join('');
-  }
-  el.scrollTop = el.scrollHeight;
-}
-
-function renderPendingCard(mid, m) {
-  const c = casesData[currentId] || {};
-  const canFwdToStu = m.sender !== 'student';  // factory → student
-  const canFwdToFct = m.sender !== 'factory_ena' && m.sender !== 'factory_shouwa'; // student → factory
-  const imgHtml = m.imageUrl
-    ? `<img src="${m.imageUrl}" class="pending-img" onclick="window.open('${m.imageUrl}','_blank')">`
-    : '';
-  const editArea = m.imageUrl ? '' :
-    `<textarea class="pending-edit" id="edit_${mid}" rows="2">${m.text||''}</textarea>`;
-  let fwdBtns = '';
-  if (canFwdToStu) fwdBtns += `<button class="fwd-btn fwd-to-stu" onclick="forwardMsg('${mid}','student')">→ 生徒に転送</button>`;
-  if (canFwdToFct) fwdBtns += `<button class="fwd-btn fwd-to-fct" onclick="forwardMsg('${mid}','factory')">→ 工場に転送</button>`;
-  return `<div class="pending-card" id="pcard_${mid}">
-    <div class="pending-head">
-      <span class="pending-tag">⏳ 承認待ち</span>
-      <span class="pending-from">${m.senderLabel||m.sender} · ${fmtTime(m.timestamp)}</span>
-    </div>
-    <div class="pending-body">${m.text||''}</div>
-    ${imgHtml}
-    ${editArea}
-    <div class="fwd-row">
-      ${fwdBtns}
-      ${role==='admin'?`<button class="del-msg-btn" onclick="deleteMsg('${mid}')">削除</button>`:''}
-    </div>
-  </div>`;
-}
-
-function renderBubble(m, view) {
-  const isMe = (view==='mgr' && (m.sender==='admin'||m.sender==='goto')) ||
-               (view==='fct' && (m.sender==='factory_ena'||m.sender==='factory_shouwa')) ||
-               (view==='stu' && m.sender==='student');
-  // For factory/student: show original sender label
-  const label = m.senderLabel || m.sender;
-  const text  = m.forwardedText || m.text || '';
-  const side  = isMe ? 'me' : 'them';
-  const inner = m.imageUrl
-    ? `<img src="${m.imageUrl}" class="mimg" onclick="window.open('${m.imageUrl}','_blank')">`
-    : `<div class="mbubble ${side}">${text}</div>`;
-  return `<div class="mwrap ${side}">
-    <div class="mlbl">${label}</div>
-    ${inner}
-    <div class="mtime">${fmtTime(m.timestamp)}</div>
-  </div>`;
-}
-
-// ═══════════════════════════════════════════
-// FORWARD / DELETE MESSAGE
-// ═══════════════════════════════════════════
-function forwardMsg(mid, forwardTo) {
-  if (!currentId) return;
-  const c = casesData[currentId] || {};
-  const editEl = document.getElementById('edit_' + mid);
-  const editedText = editEl ? editEl.value.trim() : null;
-
-  const updates = { status: 'forwarded', forwardTo, forwardedAt: ts() };
-  if (editedText !== null) updates.forwardedText = editedText;
-
-  db.ref('messages/' + currentId + '/' + mid).update(updates).then(() => {
-    // Get updated message for notification
-    db.ref('messages/' + currentId + '/' + mid).once('value', snap => {
-      if (snap.val()) notifyForwarded(snap.val(), c);
-    });
-  });
-}
-
-function deleteMsg(mid) {
-  if (!currentId || role !== 'admin') return;
-  if (!confirm('このメッセージを削除しますか？')) return;
-  db.ref('messages/' + currentId + '/' + mid).remove();
-}
-
-// ═══════════════════════════════════════════
-// INPUT AREA
-// ═══════════════════════════════════════════
-function renderInput(containerId) {
-  const prefix = containerId.replace('In','');
-  document.getElementById(containerId).innerHTML = `
-    <div class="mrow">
-      <textarea class="mta" id="${prefix}mta" rows="2" placeholder="メッセージを入力..."></textarea>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
-      <span class="file-lbl">📎 画像添付：</span>
-      <input type="file" id="${prefix}file" accept="image/*" style="font-size:12px;flex:1;min-width:0">
-    </div>
-    <button class="sbtn" id="${prefix}sendbtn" style="width:100%" onclick="sendAll('${prefix}')">送信</button>`;
-}
-
-async function sendAll(prefix) {
-  const taEl  = document.getElementById(prefix + 'mta');
-  const fileEl = document.getElementById(prefix + 'file');
-  const text  = taEl?.value?.trim() || '';
-  const file  = fileEl?.files?.[0];
-  if (!text && !file) return;
-  const btn = document.getElementById(prefix + 'sendbtn');
-  if (btn) { btn.textContent = '送信中...'; btn.disabled = true; }
-  try {
-    if (text) { submitMsg(prefix, text, null); taEl.value = ''; }
-    if (file) {
-      const url = await uploadImage(file);
-      submitMsg(prefix, '', url);
-      fileEl.value = '';
     }
-  } catch(e) { alert('送信に失敗しました。'); }
-  if (btn) { btn.textContent = '送信'; btn.disabled = false; }
-}
-
-function submitMsg(prefix, text, imageUrl) {
-  if (!currentId) return;
-  const c  = casesData[currentId] || {};
-  const sl = role==='admin'?'管理者１':role==='goto'?'管理者２':role==='factory_ena'?'恵那シルク':role==='factory_shouwa'?'昭和転写':c.studentName||'生徒';
-
-  let status, forwardTo;
-  if (isAdmin()) {
-    // Admin messages go directly as forwarded — visible to both factory and student
-    status    = 'forwarded';
-    forwardTo = 'both';
-  } else if (isFactory()) {
-    status    = 'pending';
-    forwardTo = null;
-  } else {
-    // student
-    status    = 'pending';
-    forwardTo = null;
+    return null;
   }
 
-  const msg = {
-    sender: role, senderLabel: sl,
-    text: text || '', imageUrl: imageUrl || null,
-    timestamp: ts(), status, forwardTo,
-  };
-  if (!imageUrl) delete msg.imageUrl;
-
-  db.ref('messages/'+currentId).push(msg).then(() => {
-    if (status === 'pending') notifyPending(msg, c);
-    if (status === 'forwarded' && forwardTo === 'both') {
-      // Notify both factory and student
-      const c2 = casesData[currentId] || {};
-      const fe = FACTORY_EMAILS[c2.factory] || '';
-      if (fe) sendNotification(fe, msg.senderLabel, c2.designName, c2.studentName, msg.text || '（画像）');
-      if (c2.studentEmail) sendNotification(c2.studentEmail, msg.senderLabel, c2.designName, c2.studentName, msg.text || '（画像）');
-    }
-  });
-}
-
-function sendMsg(taId) {
-  const text = document.getElementById(taId)?.value?.trim();
-  if (!text || !currentId) return;
-  submitMsg(taId.replace('mta',''), text, null);
-  document.getElementById(taId).value = '';
-}
-
-// ═══════════════════════════════════════════
-// STUDENT SEND (pending to factory)
-// ═══════════════════════════════════════════
-async function sendStuAll() {
-  const text = document.getElementById('stuta')?.value?.trim() || '';
-  const fileInput = document.getElementById('stufile');
-  const file = fileInput?.files?.[0];
-  if (!text && !file) return;
-  if (!currentId) return;
-  const c = casesData[currentId] || {};
-
-  const sendBtn = document.querySelector('#stuIn .sbtn');
-  if (sendBtn) { sendBtn.textContent = '送信中...'; sendBtn.disabled = true; }
-
-  try {
-    if (text) {
-      const msg = {sender:'student', senderLabel:c.studentName||'生徒', text, timestamp:ts(), status:'pending', forwardTo:null};
-      await db.ref('messages/'+currentId).push(msg);
-      notifyPending(msg, c);
-      document.getElementById('stuta').value = '';
-    }
-    if (file) {
-      const url = await uploadImage(file);
-      const msg = {sender:'student', senderLabel:c.studentName||'生徒', text:'', imageUrl:url, timestamp:ts(), status:'pending', forwardTo:null};
-      await db.ref('messages/'+currentId).push(msg);
-      notifyPending(msg, c);
-      fileInput.value = '';
-    }
-  } catch(e) {
-    alert('送信に失敗しました。再度お試しください。');
+  function normEmail(s){
+    return (s||'').trim().toLowerCase();
   }
-  if (sendBtn) { sendBtn.textContent = '送信'; sendBtn.disabled = false; }
-}
 
-function sendStu() {
-  const text = document.getElementById('stuta')?.value?.trim();
-  if (!text || !currentId) return;
-  const c  = casesData[currentId] || {};
-  const msg = {
-    sender:'student', senderLabel:c.studentName||'生徒',
-    text, timestamp:ts(), status:'pending', forwardTo:null,
-  };
-  db.ref('messages/'+currentId).push(msg).then(() => notifyPending(msg, c));
-  document.getElementById('stuta').value = '';
-}
+  // メールアドレスが一致すれば最優先、なければ名前（空白除去）で一致を見る
+  function findPerson(name, email){
+    var emailKey = normEmail(email);
+    if (emailKey) {
+      var byEmail = participants.find(function(p){ return normEmail(p.email) === emailKey; });
+      if (byEmail) return byEmail;
+    }
+    var key = normName(name);
+    return participants.find(function(p){ return normName(p.name) === key; });
+  }
 
-async function sendStuImage() {
-  const fileInput = document.getElementById('stufile');
-  if (!fileInput || !fileInput.files[0] || !currentId) return;
-  const c   = casesData[currentId] || {};
-  const btn = document.getElementById('stuimgbtn');
-  if (btn) { btn.textContent = '送信中...'; btn.disabled = true; }
-  try {
-    const url = await uploadImage(fileInput.files[0]);
-    const msg = {
-      sender:'student', senderLabel:c.studentName||'生徒',
-      text:'', imageUrl:url, timestamp:ts(), status:'pending', forwardTo:null,
+  // ---- ファイルの文字コード自動判定して読み込む ----
+  function readFileAsText(file, callback){
+    var reader = new FileReader();
+    reader.onload = function(e){
+      var buf = new Uint8Array(e.target.result);
+      var text;
+      try {
+        // UTF-8として読めるか試す（文字化けバイト列があれば例外 or 置換文字が出る）
+        var utf8Decoder = new TextDecoder('utf-8', { fatal: true });
+        text = utf8Decoder.decode(buf);
+      } catch(err) {
+        try {
+          var sjisDecoder = new TextDecoder('shift-jis');
+          text = sjisDecoder.decode(buf);
+        } catch(err2) {
+          var utf8Lenient = new TextDecoder('utf-8');
+          text = utf8Lenient.decode(buf);
+        }
+      }
+      callback(text);
     };
-    db.ref('messages/'+currentId).push(msg).then(() => notifyPending(msg, c));
-    fileInput.value = '';
-    if (btn) { btn.textContent = '送信'; btn.disabled = false; }
-  } catch(e) {
-    alert('画像のアップロードに失敗しました。');
-    if (btn) { btn.textContent = '送信'; btn.disabled = false; }
+    reader.readAsArrayBuffer(file);
   }
-}
 
-// ═══════════════════════════════════════════
-// STUDENT VIEW
-// ═══════════════════════════════════════════
-function renderStuDet(c) {
-  document.getElementById('stuInfo').innerHTML = `
-    <div style="font-size:15px;font-weight:800;margin-bottom:10px">${c.designName}</div>
-    <div class="igrid">
-      <div class="ibox"><div class="ilbl">仕様</div><div class="ival">${c.spec||'—'}</div></div>
-      <div class="ibox"><div class="ilbl">担当工場</div><div class="ival">${c.factory||'担当決定待ち'}</div></div>
-    </div>
-    ${c.finalAmount?`<div class="abox" style="background:#f0fdf4;margin-bottom:10px"><div class="ilbl">お見積金額（税抜）</div><div class="ival" style="color:var(--green);font-size:18px">¥${c.finalAmount.toLocaleString()}</div></div>`:''}
-    ${c.note?`<div style="font-size:12px;color:var(--ink-light)">${c.note}</div>`:''}`;
-  document.getElementById('stuFlow').innerHTML = ST.map(s=>{
-    const on=c.status===s.key;
-    return `<span class="step" style="background:${on?s.color:'transparent'};color:${on?'#fff':s.color};border-color:${s.color};opacity:${on?1:0.4}">${s.key}</span>`;
-  }).join('');
-  if (!document.getElementById('stuta')) {
-    document.getElementById('stuIn').innerHTML = `
-      <div class="mrow">
-        <textarea class="mta" id="stuta" rows="2" placeholder="工場へメッセージを送る..."></textarea>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
-        <span class="file-lbl">📎 画像添付：</span>
-        <input type="file" id="stufile" accept="image/*" style="font-size:12px;flex:1;min-width:0">
-      </div>
-      <button class="sbtn" style="width:100%" onclick="sendStuAll()">送信</button>`;
+  // ---- 予約管理CSV取込 ----
+  var nameKeys = ['お名前','名前','氏名'];
+  var kanaKeys = ['フリガナ','ふりがな','カナ'];
+  var dateKeys = ['日程','予約日時','日時','予約日'];
+  var emailKeys = ['メールアドレス','メール'];
+
+  var statusKeys = ['参加状況'];
+
+  function isCancelledRow(row){
+    var statusCol = findCol(row, statusKeys);
+    if (statusCol && String(row[statusCol]||'').indexOf('キャンセル') !== -1) return true;
+    return false;
   }
-}
 
-// ═══════════════════════════════════════════
-// STUDENT URL CHECK
-// ═══════════════════════════════════════════
-// ═══════════════════════════════════════════
-// REGISTRATION FORM
-// ═══════════════════════════════════════════
-let regGenUrl = '';
+  function importReserveRows(rows, challengeName){
+    var added = 0, updated = 0, skipped = 0, duplicated = 0, cancelled = 0;
+    rows.forEach(function(row){
+      var nameCol = findCol(row, nameKeys);
+      var kanaCol = findCol(row, kanaKeys);
+      var dateCol = findCol(row, dateKeys);
+      var emailCol = findCol(row, emailKeys);
+      var name = nameCol ? String(row[nameCol]||'').trim() : '';
+      if (!name) { skipped++; return; }
 
-function checkRegisterUrl() {
-  const reg = new URLSearchParams(location.search).get('register');
-  if (!reg) return false;
-  document.getElementById('loginScreen').style.display = 'none';
-  document.getElementById('registerScreen').classList.remove('hidden');
-  document.getElementById('registerScreen').style.display = 'flex';
-  return true;
-}
+      if (isCancelledRow(row)) {
+        cancelled++;
+        return;
+      }
 
-async function submitRegister() {
-  const name    = document.getElementById('rf_name').value.trim();
-  const email   = document.getElementById('rf_email').value.trim();
-  const design  = document.getElementById('rf_design').value.trim();
-  const factory = document.getElementById('rf_factory').value;
-  const data    = document.getElementById('rf_data').value.trim();
-  if (!name || !email || !design || !factory || !data) {
-    document.getElementById('regErr').classList.remove('hidden'); return;
-  }
-  document.getElementById('regErr').classList.add('hidden');
-  const btn = document.querySelector('#regForm .btn-p');
-  if (btn) { btn.textContent = '送信中...'; btn.disabled = true; }
-  try {
-    const key = genKey();
-    const note = [
-      '入稿形式：' + document.getElementById('rf_format').value,
-      'データURL：' + data,
-      'サイズ：' + document.getElementById('rf_size').value,
-      '両面の柄：' + document.getElementById('rf_pattern').value,
-      '希望枚数：' + document.getElementById('rf_qty').value,
-      '合紙：' + document.getElementById('rf_paper').value,
-      '裁断希望：' + document.getElementById('rf_cut').value,
-      'サンプル：' + document.getElementById('rf_sample').value,
-      '見積返信期限：' + (document.getElementById('rf_deadline').value || '未定'),
-      '備考：' + document.getElementById('rf_note').value.trim(),
-    ].join(' | ');
-    await db.ref('cases').push({
-      studentName:  name,
-      studentEmail: email,
-      studentTel:   document.getElementById('rf_tel').value.trim(),
-      studentAddr:  document.getElementById('rf_addr').value.trim(),
-      designName:   design,
-      spec:         document.getElementById('rf_size').value,
-      note,
-      studentKey:   key,
-      status:       '入稿受付',
-      statusDate:   today(),
-      factory,
-      estimate:     0, finalAmount: 0, markup: 0,
-      createdAt:    ts(),
+      var kana = kanaCol ? String(row[kanaCol]||'').trim() : '';
+      var email = emailCol ? String(row[emailCol]||'').trim() : '';
+      var datetime = dateCol ? String(row[dateCol]||'').trim() : '';
+
+      var survey = {};
+      Object.keys(row).forEach(function(k){
+        if (k === nameCol || k === kanaCol) return;
+        var v = row[k];
+        if (v === undefined || v === null || String(v).trim() === '') return;
+        survey[normalizeKey(k)] = String(v).trim();
+      });
+
+      var person = findPerson(name, email);
+      var isNew = false;
+      if (!person) {
+        person = { id: uid(), name: name, kana: kana || toKana(name), email: email, visits: [] };
+        participants.push(person);
+        added++;
+        isNew = true;
+      } else {
+        if (kana && !person.kana) person.kana = kana;
+        if (email && !person.email) person.email = email;
+      }
+
+      // 重複チェック：同じ人・同じ日時の来訪が既にあれば追加しない
+      var dup = person.visits.some(function(v){ return v.datetime === datetime; });
+      if (dup) {
+        duplicated++;
+        return;
+      }
+
+      person.visits.push({
+        id: vuid(),
+        datetime: datetime,
+        survey: survey,
+        deal: '',
+        amount: '',
+        memo: '',
+        challenge: challengeName || ''
+      });
+      if (!isNew) updated++;
     });
-    const url = `${location.origin}${location.pathname}?s=${key}`;
-    regGenUrl = url;
-    document.getElementById('regUrl').textContent = url;
-    document.getElementById('regForm').classList.add('hidden');
-    document.getElementById('regDone').classList.remove('hidden');
-    // Notify admin
-    sendNotification(RIE_EMAIL,  name, design, name, 'フォームからの新規お申込みがありました');
-    sendNotification(GOTO_EMAIL, name, design, name, 'フォームからの新規お申込みがありました');
-    // Notify student with their URL
-    if (email) {
-      emailjs.send(EJS_SERVICE, EJS_TEMPLATE, {
-        to_email:     email,
-        name:         name,
-        sender_name:  'Lavique',
-        case_name:    design,
-        student_name: name,
-        message:      '入稿のお申込みが完了しました。以下があなた専用のページURLです。大切に保管してください。\n\n' + url,
-        app_url:      url,
-        email:        email,
-      }).catch(e => console.log('Student email error:', e));
+    finishImport();
+    return { added: added, updated: updated, skipped: skipped, duplicated: duplicated, cancelled: cancelled, total: rows.length };
+  }
+
+  // ---- 事前アンケートCSV取込：日時が近い来訪に統合、見つからなければ新規 ----
+  var answerDateKeys = ['回答日時','回答日'];
+
+  // 来訪の中から、回答日時に最も近い（できれば回答日時より後の）来訪を選ぶ
+  // challengeName が指定されていれば、同じチャレンジの来訪だけを対象にする
+  function findBestVisit(person, answerDate, challengeName){
+    var pool = person.visits;
+    if (challengeName) {
+      var sameChallenge = pool.filter(function(v){ return v.challenge === challengeName; });
+      if (sameChallenge.length) pool = sameChallenge;
     }
-  } catch(e) {
-    alert('送信に失敗しました。再度お試しください。');
-    if (btn) { btn.textContent = '送信する'; btn.disabled = false; }
+    if (!pool.length) return null;
+    var withDate = pool.filter(function(v){ return parseDate(v.datetime); });
+    if (!withDate.length) {
+      // 日時情報を持つ来訪が一つもなければ、唯一の来訪（または最後の来訪）を使う
+      return pool[pool.length - 1];
+    }
+    var ansD = parseDate(answerDate);
+    if (!ansD) {
+      // 回答日時が読めない場合は、一番新しい予約に紐づける
+      withDate.sort(function(a,b){ return parseDate(b.datetime) - parseDate(a.datetime); });
+      return withDate[0];
+    }
+    // 回答日時より後（未来）の予約の中で、一番近いものを優先
+    var future = withDate.filter(function(v){ return parseDate(v.datetime) >= ansD; });
+    if (future.length) {
+      future.sort(function(a,b){ return parseDate(a.datetime) - parseDate(b.datetime); });
+      return future[0];
+    }
+    // すべて過去の予約しかなければ、一番近い（最新の）ものを使う
+    withDate.sort(function(a,b){ return parseDate(b.datetime) - parseDate(a.datetime); });
+    return withDate[0];
   }
-}
 
-function copyRegUrl() {
-  navigator.clipboard.writeText(regGenUrl).then(() => alert('URLをコピーしました！大切に保管してください。'));
-}
+  function importSurveyRows(rows, challengeName){
+    var linked = 0, newly = 0, skipped = 0, duplicated = 0;
+    rows.forEach(function(row){
+      var nameCol = findCol(row, nameKeys);
+      var emailCol = findCol(row, emailKeys);
+      var name = nameCol ? String(row[nameCol]||'').trim() : '';
+      var email = emailCol ? String(row[emailCol]||'').trim() : '';
+      if (!name) { skipped++; return; }
 
-function checkStudentUrl() {
-  const key = new URLSearchParams(location.search).get('s');
-  if (!key) return;
-  role = 'student';
-  document.getElementById('loginScreen').style.display = 'none';
-  document.getElementById('studentApp').style.display  = 'flex';
-  document.getElementById('studentApp').classList.add('active');
-  document.getElementById('stuInfo').innerHTML = '<div style="text-align:center;padding:40px;color:var(--pink)">読み込み中...</div>';
-  const timer = setTimeout(() => showStuErr('タイムアウトしました。ページを再読み込みしてください。'), 15000);
-  db.ref('cases').once('value', snap => {
-    clearTimeout(timer);
-    const all = snap.val();
-    if (!all) { showStuErr('案件が見つかりません。'); return; }
-    const entry = Object.entries(all).find(([,c])=>c.studentKey===key);
-    if (!entry) { showStuErr('案件が見つかりません。URLをご確認ください。'); return; }
-    const [cid, c] = entry;
-    currentId = cid; casesData[cid] = c;
-    document.getElementById('stuName').textContent = c.studentName;
-    renderStuDet(c);
-    startMsgListen('stu');
-    db.ref('cases/'+cid).on('value', s2=>{
-      if(s2.val()){ casesData[cid]=s2.val(); renderStuDet(s2.val()); }
+      var answerDateCol = findCol(row, answerDateKeys);
+      var answerDate = answerDateCol ? String(row[answerDateCol]||'').trim() : '';
+
+      var survey = {};
+      Object.keys(row).forEach(function(k){
+        if (k === nameCol) return;
+        var v = row[k];
+        if (v === undefined || v === null || String(v).trim() === '') return;
+        survey[normalizeKey(k)] = String(v).trim();
+      });
+
+      var person = findPerson(name, email);
+
+      // 重複チェック：同じ人に同じ回答日時のアンケートが既に入っていればスキップ
+      if (person && answerDate && person.survey) {
+        var ansKey = answerDateCol ? normalizeKey(answerDateCol) : null;
+        if (ansKey && person.survey[ansKey] === answerDate) {
+          duplicated++;
+          return;
+        }
+      }
+
+      if (person) {
+        // アンケートを人単位で保存（上書きマージ）
+        if (!person.survey) person.survey = {};
+        Object.keys(survey).forEach(function(k){
+          person.survey[k] = survey[k];
+        });
+        if (email && !person.email) person.email = email;
+        linked++;
+      } else {
+        // 予約管理CSVに登録がない人を新規作成
+        person = { id: uid(), name: name, kana: toKana(name), email: email, survey: survey, visits: [] };
+        participants.push(person);
+        newly++;
+      }
     });
-  }, err => { clearTimeout(timer); showStuErr('接続エラー: '+err.message); });
-}
+    finishImport();
+    return { linked: linked, newly: newly, skipped: skipped, duplicated: duplicated, total: rows.length };
+  }
 
-function showStuErr(msg) {
-  document.getElementById('stuBody').classList.add('hidden');
-  document.getElementById('stuNF').classList.remove('hidden');
-  document.getElementById('stuNF').querySelector('.notice').textContent = msg;
-}
+  // 予約管理CSVの列名（これ以外のキーがperson.surveyにあればアンケートありと判定）
+  var reserveCsvKeys = ['申込日時', '日程', '担当者', '参加URL', '参加状況', '成約状況', 'キャンセル理由', 'メールアドレス', '電話番号', 'フリガナ', 'お名前'];
 
-// ═══════════════════════════════════════════
-// ADD / DELETE CASE
-// ═══════════════════════════════════════════
-function openAdd() {
-  ['fs','fem','fn','fno'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('fsp').value='A4を2面付け';
-  document.getElementById('ff').value='';
-  document.getElementById('addErr').classList.add('hidden');
-  document.getElementById('urlArea').classList.add('hidden');
-  document.getElementById('saveBtn').classList.remove('hidden');
-  document.getElementById('addModal').classList.remove('hidden');
-}
-function closeAdd() { document.getElementById('addModal').classList.add('hidden'); }
+  function personHasSurvey(person){
+    if (!person.survey) {
+      // 旧データ互換：来訪のsurveyにアンケート特有キーがあればありと判定
+      return person.visits.some(function(v){
+        if (v.hasSurvey) return true;
+        if (!v.survey) return false;
+        return Object.keys(v.survey).some(function(k){
+          return !reserveCsvKeys.some(function(rk){ return k === rk; });
+        });
+      });
+    }
+    return Object.keys(person.survey).some(function(k){
+      return !reserveCsvKeys.some(function(rk){ return k === rk; });
+    });
+  }
 
-function saveCase() {
-  const student      = document.getElementById('fs').value.trim();
-  const studentEmail = document.getElementById('fem').value.trim();
-  const name         = document.getElementById('fn').value.trim();
-  if (!student||!name) { document.getElementById('addErr').classList.remove('hidden'); return; }
-  const key = genKey();
-  db.ref('cases').push({
-    studentName:student, studentEmail, designName:name,
-    spec:document.getElementById('fsp').value,
-    factory:document.getElementById('ff').value,
-    note:document.getElementById('fno').value,
-    studentKey:key, status:'入稿受付', statusDate:today(),
-    estimate:0, finalAmount:0, markup:0, createdAt:ts()
-  }).then(() => {
-    // 確実にリスト更新
-    db.ref('cases').once('value', s => { casesData = s.val() || {}; renderMgrList(); });
+  function finishImport(){
+    participants.sort(function(a,b){ return (a.kana||a.name).localeCompare(b.kana||b.name, 'ja'); });
+    saveData();
+    renderAll();
+  }
+
+  function parseCsvText(text, onSuccess, onError){
+    Papa.parse(text, {
+      header: true,
+      skipEmptyLines: true,
+      complete: function(res){ onSuccess(res.data); },
+      error: onError
+    });
+  }
+
+  // 新規入力欄が入力されていればそちらを優先、なければプルダウンの選択値を使う
+  function getCurrentChallengeName(){
+    var newInput = document.getElementById('challengeNewInput').value.trim();
+    if (newInput) return newInput;
+    var sel = document.getElementById('challengeSelect');
+    return sel.value || '';
+  }
+
+  document.getElementById('importReserveBtn').addEventListener('click', function(){
+    try {
+      if (typeof Papa === 'undefined') {
+        showStatus('importStatus', 'CSV解析ライブラリの読み込みに失敗しました。少し待ってから再度お試しください', false);
+        return;
+      }
+      var challengeName = getCurrentChallengeName();
+      if (!challengeName) {
+        showStatus('importStatus', '取込先のチャレンジを選択するか、新しいチャレンジ名を入力してください', false);
+        return;
+      }
+      var fileInput = document.getElementById('csvFileReserve');
+      if (!fileInput.files.length) {
+        showStatus('importStatus', '予約管理CSVファイルを選択してください', false);
+        return;
+      }
+      readFileAsText(fileInput.files[0], function(text){
+        parseCsvText(text, function(rows){
+          try {
+            var result = importReserveRows(rows, challengeName);
+            showStatus('importStatus', '「' + challengeName + '」へ取込完了：' + result.total + '件処理（新規 ' + result.added + '名 / 既存に追加 ' + result.updated + '件 / キャンセル除外 ' + result.cancelled + '件 / 重複スキップ ' + result.duplicated + '件 / 不正データ ' + result.skipped + '件）', true);
+            fileInput.value = '';
+            document.getElementById('challengeNewInput').value = '';
+            refreshChallengeSelectors(challengeName);
+          } catch(innerErr) {
+            showStatus('importStatus', '取込処理でエラー：' + innerErr.message, false);
+          }
+        }, function(){
+          showStatus('importStatus', 'CSVの読み込みに失敗しました', false);
+        });
+      });
+    } catch(err) {
+      showStatus('importStatus', 'エラーが発生しました：' + err.message, false);
+    }
   });
-  const url = `${location.origin}${location.pathname}?s=${key}`;
-  genUrl = url;
-  document.getElementById('urlBox').textContent = url;
-  document.getElementById('urlArea').classList.remove('hidden');
-  document.getElementById('saveBtn').classList.add('hidden');
-}
 
-function copyUrl() { navigator.clipboard.writeText(genUrl).then(()=>alert('コピーしました！このURLを生徒に送ってください。')); }
-function copyStudentUrl(url) { navigator.clipboard.writeText(url).then(()=>alert('コピーしました！生徒に送ってください。')); }
-
-function deleteCase() {
-  if (!currentId||role!=='admin') return;
-  if (!confirm('この案件を削除しますか？\nメッセージも含めて完全に削除されます。')) return;
-  const id = currentId;
-  backToList('mgr');
-  db.ref('cases/'+id).remove();
-  db.ref('messages/'+id).remove();
-}
-
-document.getElementById('addModal').addEventListener('click', e=>{
-  if(e.target.id==='addModal') closeAdd();
-});
-
-function goHome() {
-  if (role === 'admin' || role === 'goto') {
-    backToList('mgr');
-  } else if (isFactory()) {
-    backToList('fct');
-  } else {
-    // student: scroll to top
-    window.scrollTo(0,0);
-  }
-}
-
-if (!checkRegisterUrl()) checkStudentUrl();
-</script>
-  <!-- 見積書モーダル -->
-  <div id="quoteModal" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;overflow-y:auto;padding:20px">
-    <div id="quotePaper" style="max-width:720px;margin:0 auto;background:#fff;border-radius:8px;padding:40px 48px;font-family:'Noto Sans JP',sans-serif;color:#1a1a1a;font-size:14px;line-height:1.7">
-      <!-- rendered by JS -->
-    </div>
-    <div style="max-width:720px;margin:16px auto;display:flex;gap:12px" id="quoteBtns">
-      <button onclick="window.print()" style="flex:1;padding:12px;background:#7c3aed;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">🖨️ 印刷 / PDF保存</button>
-      <button onclick="document.getElementById('quoteModal').classList.add('hidden')" style="flex:1;padding:12px;background:#e5e7eb;color:#374151;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">✕ 閉じる</button>
-    </div>
-  </div>
-  <style>
-    @media print {
-      body > *:not(#quoteModal) { display:none !important; }
-      #quoteModal { position:static !important; background:none !important; padding:0 !important; }
-      #quoteBtns { display:none !important; }
-      #quotePaper { box-shadow:none !important; border-radius:0 !important; padding:20px !important; }
+  document.getElementById('importSurveyBtn').addEventListener('click', function(){
+    try {
+      if (typeof Papa === 'undefined') {
+        showStatus('importStatus', 'CSV解析ライブラリの読み込みに失敗しました。少し待ってから再度お試しください', false);
+        return;
+      }
+      var challengeName = getCurrentChallengeName();
+      if (!challengeName) {
+        showStatus('importStatus', '取込先のチャレンジを選択するか、新しいチャレンジ名を入力してください', false);
+        return;
+      }
+      var fileInput = document.getElementById('csvFileSurvey');
+      if (!fileInput.files.length) {
+        showStatus('importStatus', '事前アンケートCSVファイルを選択してください', false);
+        return;
+      }
+      readFileAsText(fileInput.files[0], function(text){
+        parseCsvText(text, function(rows){
+          try {
+            var result = importSurveyRows(rows, challengeName);
+            showStatus('importStatus', '「' + challengeName + '」へ取込完了：' + result.total + '件処理（既存に紐づけ ' + result.linked + '件 / 新規登録 ' + result.newly + '件 / 重複スキップ ' + result.duplicated + '件 / 不正データ ' + result.skipped + '件）', true);
+            fileInput.value = '';
+            document.getElementById('challengeNewInput').value = '';
+            refreshChallengeSelectors(challengeName);
+          } catch(innerErr) {
+            showStatus('importStatus', '取込処理でエラー：' + innerErr.message, false);
+          }
+        }, function(){
+          showStatus('importStatus', 'CSVの読み込みに失敗しました', false);
+        });
+      });
+    } catch(err) {
+      showStatus('importStatus', 'エラーが発生しました：' + err.message, false);
     }
-  </style>
+  });
+
+  document.getElementById('importPasteBtn').addEventListener('click', function(){
+    var text = document.getElementById('csvPaste').value.trim();
+    var type = document.getElementById('pasteTypeSelect').value;
+    var challengeName = getCurrentChallengeName();
+    if (!challengeName) {
+      showStatus('importStatus', '取込先のチャレンジを選択するか、新しいチャレンジ名を入力してください', false);
+      return;
+    }
+    if (!text) {
+      showStatus('importStatus', 'CSVを貼り付けてください', false);
+      return;
+    }
+    parseCsvText(text, function(rows){
+      var result = type === 'survey' ? importSurveyRows(rows, challengeName) : importReserveRows(rows, challengeName);
+      if (type === 'survey') {
+        showStatus('importStatus', '「' + challengeName + '」へ取込完了：' + result.total + '件処理（紐づけ ' + result.linked + '件 / 新規 ' + result.newly + '件）', true);
+      } else {
+        showStatus('importStatus', '「' + challengeName + '」へ取込完了：' + result.total + '件処理（新規 ' + result.added + '名 / 既存に追加 ' + result.updated + '件 / キャンセル除外 ' + (result.cancelled||0) + '件）', true);
+      }
+      document.getElementById('csvPaste').value = '';
+      document.getElementById('challengeNewInput').value = '';
+      refreshChallengeSelectors(challengeName);
+    }, function(){
+      showStatus('importStatus', 'CSVの解析に失敗しました', false);
+    });
+  });
+
+  // ---------- 一覧タブ ----------
+  function getFilteredList(){
+    var q = document.getElementById('searchBox').value.trim();
+    var challengeFilter = document.getElementById('listChallengeSelect').value;
+    var dealFilter = document.getElementById('listDealFilter').value;
+
+    return participants
+      .map(function(p){
+        var visitsInChallenge = challengeFilter
+          ? p.visits.filter(function(v){ return v.challenge === challengeFilter; })
+          : p.visits;
+        // 成約フィルター適用
+        var visitsFiltered = dealFilter
+          ? visitsInChallenge.filter(function(v){
+              if (dealFilter === 'none') return !v.deal || v.deal === '';
+              return v.deal === dealFilter;
+            })
+          : visitsInChallenge;
+        return { person: p, visits: visitsFiltered };
+      })
+      .filter(function(entry){
+        if (!entry.visits.length) return false;
+        return !q || entry.person.name.indexOf(q) !== -1;
+      });
+  }
+
+  function renderList(){
+    var challengeFilter = document.getElementById('listChallengeSelect').value;
+    var list = getFilteredList();
+
+    document.getElementById('listCount').textContent = list.length + ' 名';
+
+    var wrap = document.getElementById('listTableWrap');
+    if (!list.length) {
+      wrap.innerHTML = '<p class="empty-msg">' + (challengeFilter ? 'このチャレンジに該当する参加者がいません。' : '登録されている参加者がいません。CSV取込タブから登録してください。') + '</p>';
+      return;
+    }
+
+    var html = '<table><thead><tr><th>名前</th><th>参加回数</th><th>直近の予約日時</th><th>直近の成約</th><th></th></tr></thead><tbody>';
+    list.forEach(function(entry){
+      var p = entry.person;
+      var visits = entry.visits;
+      var lastVisit = visits[visits.length - 1];
+      var dealBadge = '';
+      if (lastVisit) {
+        if (lastVisit.deal === 'yes') dealBadge = '<span class="badge ok">成約</span>';
+        else if (lastVisit.deal === 'no') dealBadge = '<span class="badge no">未成約</span>';
+        else if (lastVisit.deal === 'hold') dealBadge = '<span class="badge" style="background:#e8f0fe;color:#1a56a0">保留</span>';
+      }
+      var hasAnket = personHasSurvey(p);
+      var anketBadge = hasAnket ? '' : '<span class="badge warn" style="margin-left:6px">アンケート未</span>';
+
+      html += '<tr class="clickable" data-id="' + p.id + '">' +
+        '<td>' + escapeHtml(p.name) + anketBadge + '</td>' +
+        '<td>' + visits.length + '回</td>' +
+        '<td>' + escapeHtml(lastVisit ? lastVisit.datetime : '-') + '</td>' +
+        '<td>' + dealBadge + '</td>' +
+        '<td><button class="secondary del-person-btn" data-id="' + p.id + '" style="padding:4px 10px;font-size:11px">削除</button></td>' +
+        '</tr>';
+      html += '<tr><td colspan="5" style="padding:0;border:none"><div class="detail" id="detail-' + p.id + '"></div></td></tr>';
+    });
+    html += '</tbody></table>';
+    wrap.innerHTML = html;
+
+    wrap.querySelectorAll('.del-person-btn').forEach(function(btn){
+      btn.addEventListener('click', function(e){
+        e.stopPropagation();
+        var id = btn.dataset.id;
+        var p = participants.find(function(x){ return x.id === id; });
+        if (!p) return;
+        if (confirm(escapeHtml(p.name) + ' さんのデータを完全に削除します。よろしいですか？')) {
+          participants = participants.filter(function(x){ return x.id !== id; });
+          saveData();
+          renderAll();
+        }
+      });
+    });
+
+    wrap.querySelectorAll('tr.clickable').forEach(function(tr){
+      tr.addEventListener('click', function(){
+        var id = tr.dataset.id;
+        var detail = document.getElementById('detail-' + id);
+        var isOpen = detail.classList.contains('open');
+        wrap.querySelectorAll('.detail').forEach(function(d){ d.classList.remove('open'); });
+        if (!isOpen) {
+          detail.innerHTML = renderPersonDetail(id);
+          detail.classList.add('open');
+          bindDetailDeleteButtons(detail, id);
+          bindResultEditors(detail, id);
+        }
+      });
+    });
+  }
+
+  function bindDetailDeleteButtons(detailEl, personId){
+    detailEl.querySelectorAll('.del-visit-btn').forEach(function(btn){
+      btn.addEventListener('click', function(e){
+        e.stopPropagation();
+        var visitId = btn.dataset.vid;
+        var p = participants.find(function(x){ return x.id === personId; });
+        if (!p) return;
+        if (confirm('この回の記録を削除します。よろしいですか？')) {
+          p.visits = p.visits.filter(function(v){ return v.id !== visitId; });
+          if (!p.visits.length) {
+            participants = participants.filter(function(x){ return x.id !== personId; });
+          }
+          saveData();
+          renderAll();
+        }
+      });
+    });
+  }
+
+  function renderResultEditor(v){
+    var dealOptions = ['', 'yes', 'no', 'hold'].map(function(opt){
+      var label = opt === 'yes' ? '成約' : opt === 'no' ? '未成約' : opt === 'hold' ? '保留' : '未記入';
+      var sel = (v.deal || '') === opt ? ' selected' : '';
+      return '<option value="' + opt + '"' + sel + '>' + label + '</option>';
+    }).join('');
+    var payOptions = ['', 'card', 'transfer'].map(function(opt){
+      var label = opt === 'card' ? 'カード' : opt === 'transfer' ? '振込' : '未記入';
+      var sel = (v.payment || '') === opt ? ' selected' : '';
+      return '<option value="' + opt + '"' + sel + '>' + label + '</option>';
+    }).join('');
+    var html = '<div class="result-editor" data-vid="' + v.id + '">';
+    html += '<div class="field-row"><label>成約</label><select class="deal-input" style="flex:1">' + dealOptions + '</select></div>';
+    html += '<div class="field-row"><label>金額（円）</label><input type="text" class="amount-input" style="flex:1" value="' + escapeHtml(v.amount || '') + '" placeholder="例 98000"></div>';
+    html += '<div class="field-row"><label>支払い方法</label><select class="payment-input" style="flex:1">' + payOptions + '</select></div>';
+    html += '<div class="field-row" style="align-items:flex-start"><label>簡易メモ</label><textarea class="memo-input" style="flex:1; min-height:60px">' + escapeHtml(v.memo || '') + '</textarea></div>';
+    html += '<div class="row"><button class="save-result-btn" data-vid="' + v.id + '">この回の内容を保存</button></div>';
+    html += '<div class="status-msg" id="result-status-' + v.id + '"></div>';
+    html += '</div>';
+    return html;
+  }
+
+  function renderPersonDetail(id){
+    var p = participants.find(function(x){ return x.id === id; });
+    if (!p) return '';
+    var html = '';
+
+    // アンケートは人単位で表示（旧データ互換：person.surveyがなければ最初の来訪のsurveyから表示）
+    var personSurvey = p.survey || null;
+    if (!personSurvey) {
+      // 旧データ：来訪のsurveyからアンケート特有のものを探す
+      p.visits.forEach(function(v){
+        if (!personSurvey && v.survey) {
+          var hasNonReserve = Object.keys(v.survey).some(function(k){
+            return !reserveCsvKeys.some(function(rk){ return k === rk; });
+          });
+          if (hasNonReserve) personSurvey = v.survey;
+        }
+      });
+    }
+
+    // アンケートセクションを一番上に表示
+    html += '<div class="visit-block" style="background:#fff8f0;border-color:#f5c8a0">';
+    html += '<h4 style="margin-bottom:6px">事前アンケート</h4><dl>';
+    if (personSurvey && Object.keys(personSurvey).length) {
+      Object.keys(personSurvey).forEach(function(k){
+        html += '<dt>' + escapeHtml(k) + '</dt><dd>' + escapeHtml(personSurvey[k]) + '</dd>';
+      });
+    } else {
+      html += '<dt>事前アンケート</dt><dd>登録なし</dd>';
+    }
+    html += '</dl></div>';
+
+    var sortedVisits = p.visits.slice().sort(function(a,b){
+      var da = parseDate(a.datetime);
+      var db = parseDate(b.datetime);
+      if (da && db) return da - db;
+      if (da) return -1;
+      if (db) return 1;
+      return 0;
+    });
+    sortedVisits.forEach(function(v, idx){
+      html += '<div class="visit-block">';
+      html += '<h4>第' + (idx+1) + '回｜' + escapeHtml(v.datetime || '日時未登録') +
+        '<button class="secondary del-visit-btn" data-vid="' + v.id + '" style="float:right;padding:2px 10px;font-size:11px">この回を削除</button></h4>';
+      html += renderResultEditor(v);
+      html += '</div>';
+    });
+    return html;
+  }
+
+  function bindResultEditors(containerEl, personId){
+    containerEl.querySelectorAll('.save-result-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var vid = btn.dataset.vid;
+        var editor = containerEl.querySelector('.result-editor[data-vid="' + vid + '"]');
+        var p = participants.find(function(x){ return x.id === personId; });
+        if (!p) return;
+        var v = p.visits.find(function(x){ return x.id === vid; });
+        if (!v) return;
+        v.deal = editor.querySelector('.deal-input').value;
+        v.amount = editor.querySelector('.amount-input').value.trim();
+        v.payment = editor.querySelector('.payment-input').value;
+        v.memo = editor.querySelector('.memo-input').value.trim();
+        saveData();
+        showStatus('result-status-' + vid, '保存しました', true);
+      });
+    });
+  }
+
+  function escapeHtml(s){
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+      return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+    });
+  }
+
+  document.getElementById('searchBox').addEventListener('input', renderList);
+  document.getElementById('listDealFilter').addEventListener('change', renderList);
+
+  document.getElementById('exportCsvBtn').addEventListener('click', function(){
+    var list = getFilteredList();
+    if (!list.length) {
+      alert('出力対象のデータがありません');
+      return;
+    }
+    var rows = [['名前', '予約日時', 'チャレンジ', '成約', '金額（円）', '支払い方法', 'メモ']];
+    list.forEach(function(entry){
+      entry.visits.forEach(function(v){
+        var deal = v.deal === 'yes' ? '成約' : v.deal === 'no' ? '未成約' : v.deal === 'hold' ? '保留' : '未記入';
+        var payment = v.payment === 'card' ? 'カード' : v.payment === 'transfer' ? '振込' : '';
+        rows.push([
+          entry.person.name,
+          v.datetime || '',
+          v.challenge || '',
+          deal,
+          v.amount || '',
+          payment,
+          v.memo || ''
+        ]);
+      });
+    });
+    var csv = rows.map(function(row){
+      return row.map(function(cell){
+        var s = String(cell).replace(/"/g, '""');
+        return '"' + s + '"';
+      }).join(',');
+    }).join('\r\n');
+    // BOM付きUTF-8でExcelが文字化けしないように
+    var bom = '\uFEFF';
+    var blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    var now = new Date();
+    a.download = '個別相談_' + now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0') + '.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  // ---------- カレンダータブ ----------
+  var calCursor = new Date();
+  var selectedDateStr = null;
+
+  function parseDate(dtStr){
+    if (!dtStr) return null;
+    var m = dtStr.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})[^\d]*(\d{1,2})?:?(\d{2})?/);
+    if (!m) return null;
+    var d = new Date(parseInt(m[1]), parseInt(m[2])-1, parseInt(m[3]), m[4]?parseInt(m[4]):0, m[5]?parseInt(m[5]):0);
+    return d;
+  }
+
+  function dateKey(d){
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+
+  function getEventsByDate(){
+    var map = {};
+    participants.forEach(function(p){
+      p.visits.forEach(function(v){
+        var d = parseDate(v.datetime);
+        if (!d) return;
+        var key = dateKey(d);
+        if (!map[key]) map[key] = [];
+        map[key].push({ person: p, visit: v, date: d });
+      });
+    });
+    return map;
+  }
+
+  function renderCalendar(){
+    var year = calCursor.getFullYear();
+    var month = calCursor.getMonth();
+    document.getElementById('calMonthLabel').textContent = year + '年 ' + (month+1) + '月';
+
+    var eventsByDate = getEventsByDate();
+    var grid = document.getElementById('calGrid');
+    var dows = ['日','月','火','水','木','金','土'];
+    var html = dows.map(function(d){ return '<div class="cal-dow">' + d + '</div>'; }).join('');
+
+    var firstDay = new Date(year, month, 1);
+    var startOffset = firstDay.getDay();
+    var daysInMonth = new Date(year, month+1, 0).getDate();
+
+    for (var i=0;i<startOffset;i++) html += '<div class="cal-day empty"></div>';
+    for (var day=1; day<=daysInMonth; day++){
+      var key = year + '-' + String(month+1).padStart(2,'0') + '-' + String(day).padStart(2,'0');
+      var evs = eventsByDate[key] || [];
+      var cls = 'cal-day' + (evs.length ? ' has-event' : '') + (key === selectedDateStr ? ' selected' : '');
+      html += '<div class="' + cls + '" data-key="' + key + '">' +
+        '<span class="num">' + day + '</span>' +
+        (evs.length ? '<span class="cnt">' + evs.length + '件</span>' : '') +
+        '</div>';
+    }
+    grid.innerHTML = html;
+
+    grid.querySelectorAll('.cal-day:not(.empty)').forEach(function(el){
+      el.addEventListener('click', function(){
+        selectedDateStr = el.dataset.key;
+        renderCalendar();
+        renderDayList(selectedDateStr, eventsByDate[selectedDateStr] || []);
+      });
+    });
+
+    if (selectedDateStr) {
+      renderDayList(selectedDateStr, eventsByDate[selectedDateStr] || []);
+    } else {
+      document.getElementById('dayList').innerHTML = '<p class="empty-msg">日付を選んでください</p>';
+    }
+  }
+
+  function renderDayList(key, evs){
+    var wrap = document.getElementById('dayList');
+    if (!evs.length) {
+      wrap.innerHTML = '<p class="empty-msg">' + key + ' の予約はありません</p>';
+      return;
+    }
+    evs.sort(function(a,b){ return a.date - b.date; });
+    var html = '<p class="small" style="margin-bottom:6px">' + key + ' の予約一覧</p>';
+    evs.forEach(function(e, idx){
+      var timeStr = String(e.date.getHours()).padStart(2,'0') + ':' + String(e.date.getMinutes()).padStart(2,'0');
+      var slotAnketBadge = personHasSurvey(e.person) ? '' : '<span class="badge warn" style="margin-left:6px;font-size:10px">アンケート未</span>';
+      html += '<div class="slot" data-pid="' + e.person.id + '" data-vid="' + e.visit.id + '">' +
+        '<span class="time">' + timeStr + '</span>' +
+        '<span class="name">' + escapeHtml(e.person.name) + slotAnketBadge + '</span>' +
+        '</div>';
+      html += '<div class="detail" id="cal-detail-' + e.visit.id + '"></div>';
+    });
+    wrap.innerHTML = html;
+
+    wrap.querySelectorAll('.slot').forEach(function(slot){
+      slot.addEventListener('click', function(){
+        var vid = slot.dataset.vid;
+        var pid = slot.dataset.pid;
+        var detail = document.getElementById('cal-detail-' + vid);
+        var isOpen = detail.classList.contains('open');
+        wrap.querySelectorAll('.detail').forEach(function(d){ d.classList.remove('open'); });
+        if (!isOpen) {
+          var p = participants.find(function(x){ return x.id === pid; });
+          var v = p.visits.find(function(x){ return x.id === vid; });
+          detail.innerHTML = renderSingleVisitDetail(v, p);
+          detail.classList.add('open');
+          bindResultEditors(detail, pid);
+        }
+      });
+    });
+  }
+
+  function renderSingleVisitDetail(v, person){
+    var html = '<dl>';
+    // アンケートは人単位で表示（旧データ互換：person.surveyがなければ来訪のsurveyを使う）
+    var personSurvey = (person && person.survey) ? person.survey : null;
+    if (!personSurvey && v.survey) {
+      var hasNonReserve = Object.keys(v.survey).some(function(k){
+        return !reserveCsvKeys.some(function(rk){ return k === rk; });
+      });
+      if (hasNonReserve) personSurvey = v.survey;
+    }
+    if (personSurvey && Object.keys(personSurvey).length) {
+      Object.keys(personSurvey).forEach(function(k){
+        html += '<dt>' + escapeHtml(k) + '</dt><dd>' + escapeHtml(personSurvey[k]) + '</dd>';
+      });
+    } else {
+      html += '<dt>事前アンケート</dt><dd>登録なし</dd>';
+    }
+    html += '</dl>';
+    html += renderResultEditor(v);
+    return html;
+  }
+
+  document.getElementById('prevMonth').addEventListener('click', function(){
+    calCursor.setMonth(calCursor.getMonth()-1);
+    renderCalendar();
+  });
+  document.getElementById('nextMonth').addEventListener('click', function(){
+    calCursor.setMonth(calCursor.getMonth()+1);
+    renderCalendar();
+  });
+
+  // ---------- バックアップ・再読込 ----------
+  document.getElementById('exportJsonBtn').addEventListener('click', function(){
+    var blob = new Blob([JSON.stringify(participants, null, 2)], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'participants_backup_' + dateKey(new Date()) + '.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  document.getElementById('reloadBtn').addEventListener('click', function(){
+    renderAll();
+    showStatus('importStatus', '画面を最新の状態に更新しました', true);
+  });
+
+  document.getElementById('deleteAllBtn').addEventListener('click', function(){
+    if (confirm('登録されている全ての参加者データを完全に削除します。元には戻せません。よろしいですか？')) {
+      if (confirm('本当によろしいですか？（最終確認）')) {
+        participants = [];
+        saveData();
+        renderAll();
+      }
+    }
+  });
+
+  // チャレンジ選択UI（CSV取込タブ・参加者管理タブ）を最新のchallenges一覧で更新する
+  // preferName が指定されていれば、それを選択状態にする
+  function refreshChallengeSelectors(preferName){
+    var sortedChallenges = challenges.slice().sort();
+
+    var importSel = document.getElementById('challengeSelect');
+    var prevImportVal = preferName || importSel.value;
+    importSel.innerHTML = '<option value="">－ 新規入力欄に入力してください －</option>' +
+      sortedChallenges.map(function(c){ return '<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + '</option>'; }).join('');
+    if (sortedChallenges.indexOf(prevImportVal) !== -1) importSel.value = prevImportVal;
+    var hint = document.getElementById('challengeCurrentHint');
+    hint.textContent = importSel.value ? ('現在の取込先：' + importSel.value) : '';
+
+    var listSel = document.getElementById('listChallengeSelect');
+    var prevListVal = listSel.value;
+    listSel.innerHTML = '<option value="">すべてのチャレンジ</option>' +
+      sortedChallenges.map(function(c){ return '<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + '</option>'; }).join('');
+    if (sortedChallenges.indexOf(prevListVal) !== -1) listSel.value = prevListVal;
+  }
+
+  document.getElementById('challengeSelect').addEventListener('change', function(){
+    var hint = document.getElementById('challengeCurrentHint');
+    hint.textContent = this.value ? ('現在の取込先：' + this.value) : '';
+    if (this.value) document.getElementById('challengeNewInput').value = '';
+  });
+
+  document.getElementById('challengeNewInput').addEventListener('input', function(){
+    if (this.value.trim()) document.getElementById('challengeSelect').value = '';
+  });
+
+  document.getElementById('listChallengeSelect').addEventListener('change', renderList);
+
+  function renderAll(){
+    refreshChallengeSelectors();
+    renderList();
+    if (document.getElementById('panel-calendar').classList.contains('active')) renderCalendar();
+  }
+
+  loadData();
+})();
+</script>
 </body>
 </html>
